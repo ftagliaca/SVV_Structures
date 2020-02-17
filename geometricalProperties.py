@@ -24,13 +24,13 @@ class Aileron():
 
     def stringersPosition(self):
 
-        r = 0.5*self.h
-        l_s = math.sqrt((self.C_a-r)**2 + r**2)
+        r = 0.5*self.h #radius of the circular section
+        l_s = math.sqrt((self.C_a-r)**2 + r**2) #length of the straight skin section
 
         perimeter = math.pi*r + 2*l_s #perimeter of the aileron
         d_st = perimeter/self.n_st #distance between stiffners
 
-        self.st_pos = np.zeros([self.n_st, 2])
+        self.st_pos = np.zeros([self.n_st, 2]) #create list of stiffners locations
 
         for i in range(self.n_st):
 
@@ -41,17 +41,14 @@ class Aileron():
             if alpha <= math.pi/2:
                 self.st_pos[i,0] = r*math.sin(alpha)
                 self.st_pos[i,1] = -r + r*math.cos(alpha)
-                print("A")
 
             elif i <= self.n_st/2:
                 self.st_pos[i,0] = (l_s-delta_d)*r/l_s
                 self.st_pos[i,1] = -r-delta_d*(self.C_a-r)/l_s
-                print("B")
 
             else:
                 self.st_pos[i,0] = - self.st_pos[int(self.n_st) - i,0]
                 self.st_pos[i,1] = self.st_pos[int(self.n_st) - i,1]
-                print("C")
 
 
 
