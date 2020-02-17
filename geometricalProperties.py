@@ -57,9 +57,9 @@ class Aileron():
         r = self.h / 2
 
         #now calculate centroids of separate parts
-        c_halfcircle = 4/3*r*math.pi
-        c_skin = 0.5*(self.C_a - r)
-        c_spar = r
+        c_halfcircle = - 4/3*r*math.pi
+        c_skin = - 0.5*(self.C_a - r)
+        c_spar = - r
 
         #the length of one of the diagonal skins
         l_skin = math.sqrt((self.C_a-r)**2 + r**2)
@@ -78,7 +78,7 @@ class Aileron():
 
         z_centroid = (Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
         /(A_halfcircle + A_skin + A_spar + self.n_st * A_stif)
-        return(-z_centroid)
+        return(z_centroid)
 
     def z_i(self, i, N_z = 81):
         '''
