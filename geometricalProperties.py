@@ -61,28 +61,28 @@ class Aileron():
 
         #now calculate centroids of separate parts
         c_halfcircle = 4/3*r*math.pi
-        c_skin = 0.5*(self.c_a - r)
+        c_skin = 0.5*(self.C_a - r)
         c_spar = r
 
         #the length of one of the diagonal skins
-        l_skin = math.sqrt((self.c_a-r)^2 + r^2)
+        l_skin = math.sqrt((self.C_a-r)**2 + r**2)
         #and the areas
         A_halfcircle = math.pi *r* self.t_sk
         A_skin = 2 * l_skin * self.t_sk   #for two skins
         A_spar = self.t_sp * self.h
-        A_stif = self.w_st * t_st + self.h_st *t_st
+        A_stif = self.w_st * self.t_st + self.h_st * self.t_st
 
         Q_stiff = 0 #same as z~ * A
         for i in range (self.n_st):
             z_i = self.st_pos[i,1] #z coordinate of ith stringer
-            Q_stiff += z_i *A_stiff    #+= is the same as Q_stiff + .....
+            Q_stiff += z_i *A_stif    #+= is the same as Q_stiff + .....
 
 
 
         z_centroid = (Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
         /(A_halfcircle + A_skin + A_spar + self.n_st * A_stif)
         return(z_centroid)
-        
+
     def z_i(self, i, N_z = 81):
         '''
         Inputs:
@@ -122,5 +122,6 @@ class Aileron():
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 A320.stringersPosition()
 print(A320.st_pos)
+print(A320.zCentroid())
 plt.plot(-A320.st_pos[:,1], A320.st_pos[:,0])
 plt.show()
