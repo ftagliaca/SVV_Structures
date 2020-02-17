@@ -82,6 +82,7 @@ class Aileron():
         z_centroid = (Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
         /(A_halfcircle + A_skin + A_spar + self.n_st * A_stif)
         return(z_centroid)
+        
     def z_i(self, i, N_z = 81):
         '''
         Inputs:
