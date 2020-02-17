@@ -55,7 +55,7 @@ class Aileron():
 
 
 
-    def zcentroid(self):
+    def zCentroid(self):
     #be careful with units. did not look at this yet
         r = self.h / 2
 
