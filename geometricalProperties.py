@@ -50,6 +50,7 @@ class Aileron():
                 self.st_pos[i,0] = - self.st_pos[int(self.n_st) - i,0]
                 self.st_pos[i,1] = self.st_pos[int(self.n_st) - i,1]
 
+        return self.st_pos
 
 
     def zCentroid(self):
@@ -78,7 +79,13 @@ class Aileron():
 
         z_centroid = (Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
         /(A_halfcircle + A_skin + A_spar + self.n_st * A_stif)
-        return(z_centroid)
+
+        return z_centroid
+
+
+    def torsionalStiffness(self):
+        pass
+        
 
     def z_i(self, i, N_z = 81):
         '''
@@ -111,10 +118,6 @@ class Aileron():
         x_i = 0.5*(0.5*self.l_a*(1-math.cos(theta))+0.5*self.l_a*(1-math.cos(theta_1)))
 
         return x_i
-
-
-    def moi(self):
-        pass
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 A320.stringersPosition()
