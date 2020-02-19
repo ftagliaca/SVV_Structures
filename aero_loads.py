@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from geometricalProperties import Aileron
+from aileronProperties import Aileron
 
 # http://fourier.eng.hmc.edu/e176/lectures/ch7/node7.html
 # https://en.wikipedia.org/wiki/Bicubic_interpolation

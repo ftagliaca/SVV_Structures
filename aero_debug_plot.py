@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from aero_loads import AerodynamicLoad
-from geometricalProperties import A320
+from aileronProperties import A320
 
 aero_load = AerodynamicLoad(A320, 'aerodynamicloada320.dat')
 
