@@ -33,7 +33,7 @@ class Aileron():
                  1st column is y-coordinate, 2nd column is z-coordinate
         '''
         r = 0.5*self.h #radius of the circular section
-        l_s = math.sqrt((self.C_a-r)**2 + r**2) #length of the straight skin section
+        self.l_s = math.sqrt((self.C_a-r)**2 + r**2) #length of the straight skin section
 
         perimeter = math.pi*r + 2*l_s #perimeter of the aileron
         d_st = perimeter/self.n_st #distance between stiffners
@@ -108,7 +108,21 @@ class Aileron():
         return self.A
 
     def torsionalStiffness(self):
-        pass
+        '''
+        Inputs:
+        Only the class itself is necessary, requires for crossArea to run first
+
+        Outputs:
+        J1, J2 = Torsional constant of the two sections
+                 (with 1 being the semicircle and 2 being the triagle)
+        '''
+
+        _ = self.crossArea()
+
+        self.J1 = 4*(self.A1**2)/(math.pi*self.h/(2*self.t_sk) + self.h/self.t_sp)
+        self.J2 = 4*(self.A2**2)/(2*self.l_s/self.t_sk)
+
+        return self.J1, self.J2
 
 
     def z_i(self, i, N_z = 81):
