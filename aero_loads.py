@@ -14,22 +14,22 @@ class AerodynamicLoad:
         self.n_z, self.n_x = self.data.shape
 
         # Coordinate of every data point [z, x]
-        self.z_coordinates = np.zeros(self.n_z)
-        self.x_coordinates = np.zeros(self.n_x)
+        self.grid_z_coordinates = np.zeros(self.n_z)
+        self.grid_x_coordinates = np.zeros(self.n_x)
 
         for i in range(self.n_z):
-            self.z_coordinates = self.z_i(i, N_z=self.n_z)
+            self.grid_z_coordinates[i] = self.z_i(i, N_z=self.n_z)
         
         for j in range(self.n_x):
-            self.x_coordinates = self.x_i(j, N_x=self.n_x)
+            self.grid_x_coordinates[j] = self.x_i(j, N_x=self.n_x)
 
         # np.ndarray that contains the 16 a_ij coefficients for every square
         self.grid_rectangles = np.zeros((self.n_z - 1, self.n_x - 1, 16))
 
         A_inv = self.__generate_interpolation_matrix__()
 
-        for i in range(self.n_z):
-            for j in range(self.n_x):
+        for i in range(self.n_z - 1):
+            for j in range(self.n_x - 1):
                 f = self.__get_f_array__(i, j)
                 self.grid_rectangles[i, j] = A_inv.dot(f)
     
@@ -107,7 +107,7 @@ class AerodynamicLoad:
 
         # 00 01 10 11
 
-        for index, delta_z_i, delta_x_i in enumerate([(0, 0), (0, 1), (1, 0), (1, 1)]):
+        for index, (delta_z_i, delta_x_i) in enumerate([(0, 0), (0, 1), (1, 0), (1, 1)]):
             local_z_i, local_x_i = z_i + delta_z_i, x_i + delta_x_i
 
             f[index] = self.data[local_z_i, local_x_i]
@@ -121,7 +121,7 @@ class AerodynamicLoad:
             elif local_z_i == self.n_z - 1:
                 h2 = 0
             
-            f[4 + index] = (self.data[local_z_i - h1, local_x_i] - self.data[local_z_i + h2, local_x_i]) / (self.z_coordinates[local_z_i - h1] - self.z_coordinates[local_z_i + h2])
+            f[4 + index] = (self.data[local_z_i - h1, local_x_i] - self.data[local_z_i + h2, local_x_i]) / (self.grid_z_coordinates[local_z_i - h1] - self.grid_z_coordinates[local_z_i + h2])
 
 
             # df / d_x
@@ -132,7 +132,7 @@ class AerodynamicLoad:
             elif local_x_i == self.n_x - 1:
                 k2 = 0
             
-            f[8 + index] = (self.data[local_z_i, local_x_i - k1] - self.data[local_z_i, local_x_i + k2]) / (self.x_coordinates[local_x_i - k1] - self.x_coordinates[local_x_i + k2])
+            f[8 + index] = (self.data[local_z_i, local_x_i - k1] - self.data[local_z_i, local_x_i + k2]) / (self.grid_x_coordinates[local_x_i - k1] - self.grid_x_coordinates[local_x_i + k2])
 
             # https://math.stackexchange.com/q/3296431
             # df / d_z d_x
@@ -142,9 +142,9 @@ class AerodynamicLoad:
                           + self.data[local_z_i - h1, local_x_i - k1] \
                           / \
                           ( \
-                            (self.x_coordinates[local_x_i - k1] - self.x_coordinates[local_x_i + k2]) \
+                            (self.grid_x_coordinates[local_x_i - k1] - self.grid_x_coordinates[local_x_i + k2]) \
                             * \
-                            (self.z_coordinates[local_z_i - h1] - self.z_coordinates[local_z_i + h2])  \
+                            (self.grid_z_coordinates[local_z_i - h1] - self.grid_z_coordinates[local_z_i + h2])  \
                           )
 
         return f
@@ -160,7 +160,16 @@ class AerodynamicLoad:
             Tuple[int, int]: Row and column of the square.
         """
 
-        pass
+        id_z = (np.abs(self.grid_z_coordinates - z)).argmin()
+        id_x = (np.abs(self.grid_x_coordinates - x)).argmin()
+
+        if self.grid_z_coordinates[id_z] >= z and id_z != 0:
+            id_z -= 1
+
+        if self.grid_x_coordinates[id_x] >= x and id_x != 0:
+            id_x -= 1
+
+        return id_z, id_x
 
     def get_value_at(self, z: float, x: float) -> float:
         """Finds the value of the aerodynamic load at the given position (z, x).
@@ -170,7 +179,7 @@ class AerodynamicLoad:
             x (float): x coordinate of point of interest
 
         Returns:
-            float: Aerodynamic load in N/m^2 at point (z, x).
+            float: Aerodynamic load in kN/m^2 at point (z, x).
         """
 
         z_i, x_i = self.__find_grid_square__(z, x)
@@ -182,10 +191,7 @@ class AerodynamicLoad:
             for j in range(4):
                 result += a_ijs[i + j * 4] * z**i * x**j
 
-        return result * 1e3
+        return result / 1e3
 
 
 
-
-
-        
