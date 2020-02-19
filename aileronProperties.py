@@ -163,8 +163,11 @@ class Aileron():
 
         I_yyhc = I_zzhc = 0.5*math.pi*self.t_sk*r**3
 
-        self.I_zztot = I_zz + I_zzskin + I_zzhc + I_zzspar
-        self.I_yytot = I_yy + I_yyskin + I_yyhc
+        I_zztot = I_zz + I_zzskin + I_zzhc + I_zzspar
+        I_yytot = I_yy + I_yyskin + I_yyhc
+
+        self.Izz = I_zztot
+        self.Iyy = I_yytot
 
         return(I_yytot, I_zztot)
 
