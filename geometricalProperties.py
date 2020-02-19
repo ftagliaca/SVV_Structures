@@ -83,6 +83,14 @@ class Aileron():
         return self.z_centroid
 
 
+    def crossArea(self):
+
+        self.A1 = math.pi*(self.h**2)/8
+        self.A2 = 0.5*self.h*(self.C_a - self.h/2)
+        self.A = self.A1 + self.A2
+
+        return self.A
+
     def torsionalStiffness(self):
         pass
 
