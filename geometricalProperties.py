@@ -107,7 +107,7 @@ class Aileron():
 
         theta = (i-1)*math.pi/N_z
         theta_1 = i*math.pi/N_z
-        z_i = -0.5*(0.5*self.C_a*(1-math.cos(theta))+0.5*self.C_a*(1-math.cos(theta_1)))
+        z_i = -0.5*(0.5*self.C_a*(1-np.cos(theta))+0.5*self.C_a*(1-np.cos(theta_1)))
 
         return z_i
 
@@ -123,13 +123,15 @@ class Aileron():
 
         theta = (i-1)*math.pi/N_x
         theta_1 = i*math.pi/N_x
-        x_i = 0.5*(0.5*self.l_a*(1-math.cos(theta))+0.5*self.l_a*(1-math.cos(theta_1)))
+        x_i = 0.5*(0.5*self.l_a*(1-np.cos(theta))+0.5*self.l_a*(1-np.cos(theta_1)))
 
         return x_i
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 A320.stringersPosition()
-print(A320.st_pos)
-print(A320.zCentroid())
-plt.plot(-A320.st_pos[:,1], A320.st_pos[:,0])
-plt.show()
+
+if __name__ == "__main__":    
+    print(A320.st_pos)
+    print(A320.zCentroid())
+    plt.plot(-A320.st_pos[:,1], A320.st_pos[:,0])
+    plt.show()
