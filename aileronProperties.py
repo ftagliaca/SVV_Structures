@@ -22,6 +22,8 @@ class Aileron():
         self.theta = theta #deg
         self.P = P*1000 #N
 
+        #Material properties obtianed from http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T3
+        
         self.E = 73.1e9
         self.G = 28e9
 
