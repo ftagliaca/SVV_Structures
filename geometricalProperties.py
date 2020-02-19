@@ -58,7 +58,7 @@ class Aileron():
         r = self.h / 2
 
         #now calculate centroids of separate parts
-        c_halfcircle = - 4/3*r*math.pi
+        c_halfcircle = - (1 - 2*r/math.pi)
         c_skin = - 0.5*(self.C_a - r)
         c_spar = - r
 
@@ -77,15 +77,15 @@ class Aileron():
 
 
 
-        z_centroid = (Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
+        self.z_centroid = (Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
         /(A_halfcircle + A_skin + A_spar + self.n_st * A_stif)
 
-        return z_centroid
+        return self.z_centroid
 
 
     def torsionalStiffness(self):
         pass
-        
+
 
     def z_i(self, i, N_z = 81):
         '''
