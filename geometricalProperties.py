@@ -23,7 +23,15 @@ class Aileron():
         self.P = P*1000 #N
 
     def stringersPosition(self):
+        '''
+        Inputs:
+        Only the class itself is necessary
 
+        Outputs:
+        st_pos = A 2D numpy array containing the locations of
+                 the stiffners.
+                 1st column is y-coordinate, 2nd column is z-coordinate
+        '''
         r = 0.5*self.h #radius of the circular section
         l_s = math.sqrt((self.C_a-r)**2 + r**2) #length of the straight skin section
 
