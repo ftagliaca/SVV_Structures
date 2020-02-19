@@ -84,9 +84,17 @@ class Aileron():
 
 
     def crossArea(self):
+        '''
+        Inputs:
+        Only the class itself is necessary
 
-        self.A1 = math.pi*(self.h**2)/8
-        self.A2 = 0.5*self.h*(self.C_a - self.h/2)
+        Outputs:
+        A = the total cross sectional area,
+            but the single cross sectional areas are available
+        '''
+
+        self.A1 = math.pi*(self.h**2)/8 #Area of semicircle
+        self.A2 = 0.5*self.h*(self.C_a - self.h/2) #Area of triagle
         self.A = self.A1 + self.A2
 
         return self.A
