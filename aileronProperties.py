@@ -22,6 +22,8 @@ class Aileron():
         self.theta = theta #deg
         self.P = P*1000 #N
 
+        #Material properties obtianed from http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T3
+
         self.E = 73.1e9
         self.G = 28e9
 
@@ -38,7 +40,7 @@ class Aileron():
         r = 0.5*self.h #radius of the circular section
         self.l_s = math.sqrt((self.C_a-r)**2 + r**2) #length of the straight skin section
 
-        perimeter = math.pi*r + 2*l_s #perimeter of the aileron
+        perimeter = math.pi*r + 2*self.l_s #perimeter of the aileron
         d_st = perimeter/self.n_st #distance between stiffners
 
         self.st_pos = np.zeros([self.n_st, 2]) #create list of stiffners locations
@@ -54,8 +56,8 @@ class Aileron():
                 self.st_pos[i,1] = -r + r*math.cos(alpha)
 
             elif i <= self.n_st/2:
-                self.st_pos[i,0] = (l_s-delta_d)*r/l_s
-                self.st_pos[i,1] = -r-delta_d*(self.C_a-r)/l_s
+                self.st_pos[i,0] = (self.l_s-delta_d)*r/self.l_s
+                self.st_pos[i,1] = -r-delta_d*(self.C_a-r)/self.l_s
 
             else:
                 self.st_pos[i,0] = - self.st_pos[int(self.n_st) - i,0]
