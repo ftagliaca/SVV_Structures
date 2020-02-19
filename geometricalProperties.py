@@ -22,6 +22,9 @@ class Aileron():
         self.theta = theta #deg
         self.P = P*1000 #N
 
+        self.E = 73.1e9
+        self.G = 28e9
+
     def stringersPosition(self):
         '''
         Inputs:
