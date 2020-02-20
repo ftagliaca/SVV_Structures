@@ -26,16 +26,15 @@ class AerodynamicLoad:
             self.grid_x_coordinates = self.grid_x_coordinates[::-1]
             self.data = self.data[:, ::-1]
 
-        # np.ndarray that contains the 16 a_ij coefficients for every square
+        # 2D array that contains all the tiles composing the interpolation.
         self.tiles: List['Tile'] = [[None for _ in range(self.n_x)] for _ in range(self.n_z)]
 
+        # Matrix necessary to calculate the coefficients of interpolation.
         self.A_inv = self.__generate_interpolation_matrix__()
 
         for i in range(self.n_z - 1):
             for j in range(self.n_x - 1):
                 self.tiles[i][j] = self.init_tile(i, j)
-#                print(self.tiles[i][j], end='\t')
-#            print()
 
 
     def __generate_interpolation_matrix__(self) -> np.ndarray:
@@ -96,9 +95,18 @@ class AerodynamicLoad:
                 A[15, i * 4 + j] = i * j
 
         return np.linalg.inv(A)
-    
 
     def init_tile(self, tile_z_i: int, tile_x_i: int) -> 'Tile':
+        """Initialises a new tile object, which then can be used to interpolate that part of the graph.
+
+        Args:
+            tile_z_i (int): z index of tile
+            tile_x_i (int): x index of tile
+
+        Returns:
+            Tile: The tile instance.
+        """
+
         outer_self = self
 
         class Tile:
@@ -137,6 +145,20 @@ class AerodynamicLoad:
 
 
             def __get_value_and_derivatives__(self, delta_z_i: int, delta_x_i: int) -> Tuple[float, float, float, float]:
+                """Internal function to get the values and approximate derivatives at the points relative to the smallest edge (0, 0), (1, 0), (0, 1), and (1, 1)
+                The derivatives are approximated using finite differences, that, in term, use the two adjacent points. In case only
+                one neighbouring point is available, the point itself is used for the finite difference calculation.
+
+                Args:
+                    delta_z_i (int): relative position in z direction
+                    delta_x_i (int): relative position in x direction
+                Returns:
+                    f   : The value of the point.
+                    fz  : A finite difference approximation of the partial derivative in z direction of that point.
+                    fx  : A finite difference approximation of the partial derivative in x direction of that point.
+                    fzx : A finite difference approximation of the partial derivative in x and z direction of that point.
+                """   
+
                 def f(z_i, x_i):
                     return outer_self.data[z_i, x_i]
 
@@ -165,6 +187,17 @@ class AerodynamicLoad:
             
         
             def __populate_f_array__(self):
+                """Internal function to populate this tile's 'f' array.
+
+                The 'f' array is the array, that, in combination with the previously calculated inverse A array,
+                can be used to calculate the coefficients necessary for interpolation.
+
+                Args:
+                    
+                Returns:
+                    
+                """ 
+
                 for index, (delta_z_i, delta_x_i) in enumerate([(0, 0), (1, 0), (0, 1), (1, 1)]):
                     f, fz, fx, fzx = self.__get_value_and_derivatives__(delta_z_i, delta_x_i)
                     self.f[index + 0 ] = f
@@ -173,7 +206,17 @@ class AerodynamicLoad:
                     self.f[index + 12] = fzx * self.dx * self.dz
             
             
-            def get_relative_pos(self, z: float, x: float) -> int:
+            def get_relative_dir(self, z: float, x: float) -> int:
+                """This function returns the direction (in term of indices) of the tile, in which the point (z, x) can be found.
+
+                Args:
+                    z (float): z-coordinate of the point
+                    x (float): x-coordinate of the point
+
+                Returns:
+                    (z, x) Tuple[int, int]: The index direction in z and x. 
+                """
+
                 dz = 0
                 if z > self.z1 and self.z_i != outer_self.n_z - 2:
                     dz = 1
@@ -190,6 +233,16 @@ class AerodynamicLoad:
 
 
             def get_value_at(self, z: float, x: float) -> Optional[float]:
+                """This function returns the interpolated value at the point (z, x).
+
+                Args:
+                    z (float): z-coordinate of the point
+                    x (float): x-coordinate of the point
+
+                Returns:
+                    float: The value at the point (z, x).
+                """
+
 
                 z_bar = (z - self.z0) / (self.z1 - self.z0)
                 x_bar = (x - self.x0) / (self.x1 - self.x0)
@@ -209,14 +262,14 @@ class AerodynamicLoad:
 
 
     def __find_grid_square__(self, z: float, x: float) -> 'Tile':
-        """Finds row and column of square that contains point with coordinates z, x.
+        """Finds the tile that contains point with coordinates z, x.
 
         Args:
             z (float): z coordinate of point
             x (float): x coordinate of point
 
         Returns:
-            Tuple[int, int]: Row and column of the square.
+            Tile: Tile containing the point.
         """
 
         # exempt last value as its index does not correspond to a tile
@@ -225,7 +278,7 @@ class AerodynamicLoad:
 
         tile = self.tiles[id_z][id_x]        
 
-        dz, dx = tile.get_relative_pos(z, x)
+        dz, dx = tile.get_relative_dir(z, x)
         return self.tiles[id_z + dz][id_x + dx]
 
 
@@ -240,23 +293,8 @@ class AerodynamicLoad:
             float: Aerodynamic load in kN/m^2 at point (z, x).
         """
 
-
         tile = self.__find_grid_square__(z, x)
         result = tile.get_value_at(z, x)
-        if result is None:
-            print(f"WRONGLY tried to find {z, x} in {tile}")
-            print("z-coords:")
-            print(self.grid_z_coordinates)
-            print("x-coords:")
-            print(self.grid_x_coordinates)
-
-            print("np.abs(self.grid_z_coordinates - z):")
-            print(np.abs(self.grid_z_coordinates - z))
-
-            print("np.abs(self.grid_x_coordinates - x):")
-            print(np.abs(self.grid_x_coordinates - x))
-
-            exit(0)
 
         return result
 
