@@ -1,38 +1,43 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Optional, List
 from aileronProperties import Aileron
 
 # http://fourier.eng.hmc.edu/e176/lectures/ch7/node7.html
 # https://en.wikipedia.org/wiki/Bicubic_interpolation
-
+ 
 class AerodynamicLoad:
     
     def __init__(self, aileron: Aileron, filename: str):
-        self.x_i, self.z_i = aileron.x_i, aileron.z_i # [] -> [m]
+        self.z_i, self.x_i = aileron.z_i, aileron.x_i # [] -> [m]
 
         self.data = np.genfromtxt(filename, delimiter=',') # [kN/m^2]
         self.n_z, self.n_x = self.data.shape
 
-        # Coordinate of every data point [z, x]
-        self.grid_z_coordinates = np.zeros(self.n_z)
-        self.grid_x_coordinates = np.zeros(self.n_x)
+        # Coordinate of every data point [z, x]        
+        self.grid_z_coordinates = self.z_i(np.arange(self.n_z) + 1, N_z=self.n_z)
+        self.grid_x_coordinates = self.x_i(np.arange(self.n_x) + 1, N_x=self.n_x)
 
-        for i in range(self.n_z):
-            self.grid_z_coordinates[i] = self.z_i(i, N_z=self.n_z)
-        
-        for j in range(self.n_x):
-            self.grid_x_coordinates[j] = self.x_i(j, N_x=self.n_x)
+        # Invert order of data if coordinates are in decreasing order
+        if self.grid_z_coordinates[0] > self.grid_z_coordinates[-1]:
+            self.grid_z_coordinates = self.grid_z_coordinates[::-1]
+            self.data = self.data[::-1, :]
+
+        if self.grid_x_coordinates[0] > self.grid_x_coordinates[-1]:
+            self.grid_x_coordinates = self.grid_x_coordinates[::-1]
+            self.data = self.data[:, ::-1]
 
         # np.ndarray that contains the 16 a_ij coefficients for every square
-        self.grid_rectangles = np.zeros((self.n_z - 1, self.n_x - 1, 16))
+        self.tiles: List['Tile'] = [[None for _ in range(self.n_x)] for _ in range(self.n_z)]
 
-        A_inv = self.__generate_interpolation_matrix__()
+        self.A_inv = self.__generate_interpolation_matrix__()
 
         for i in range(self.n_z - 1):
             for j in range(self.n_x - 1):
-                f = self.__get_f_array__(i, j)
-                self.grid_rectangles[i, j] = A_inv.dot(f)
-    
+                self.tiles[i][j] = self.init_tile(i, j)
+#                print(self.tiles[i][j], end='\t')
+#            print()
+
+
     def __generate_interpolation_matrix__(self) -> np.ndarray:
         """Generates the array used to calculate the a_ij coefficients.
 
@@ -90,66 +95,120 @@ class AerodynamicLoad:
             for j in range(4):
                 A[15, i * 4 + j] = i * j
 
-        return  np.linalg.inv(A)
+        return np.linalg.inv(A)
+    
 
-    def __get_f_array__(self, z_i: int, x_i: int) -> np.ndarray:
-        """Generates the f array that, by multiplying it with A_inv, results in the coefficients needed for interpolation.
+    def init_tile(self, tile_z_i: int, tile_x_i: int) -> 'Tile':
+        outer_self = self
 
-        Args:
-            z_i (int): z index of point (left upper corner of interpolation rectangle)
-            x_i (int): x index of point (left upper corner of interpolation rectangle)
-
-        Returns:
-            np.ndarray: Array with 16 elements representing the f values
-        """
-
-        f = np.zeros(16)
-
-        # 00 01 10 11
-
-        for index, (delta_z_i, delta_x_i) in enumerate([(0, 0), (0, 1), (1, 0), (1, 1)]):
-            local_z_i, local_x_i = z_i + delta_z_i, x_i + delta_x_i
-
-            f[index] = self.data[local_z_i, local_x_i]
-
-            # df / d_z
-
-            h1, h2 = 1, 1
-
-            if local_z_i == 0:
-                h1 = 0
-            elif local_z_i == self.n_z - 1:
-                h2 = 0
+        class Tile:
             
-            f[4 + index] = (self.data[local_z_i - h1, local_x_i] - self.data[local_z_i + h2, local_x_i]) / (self.grid_z_coordinates[local_z_i - h1] - self.grid_z_coordinates[local_z_i + h2])
+            # z_i and x_i are also the index of the corner with smallest z and x
+            def __init__(self, z_i: int, x_i: int):
+                self.z_i = z_i
+                self.x_i = x_i
+
+                # tile edge points
+                self.z0 = outer_self.grid_z_coordinates[z_i]
+                self.z1 = outer_self.grid_z_coordinates[z_i + 1]
+
+                if self.z0 > self.z1:
+                    tmp = self.z0
+                    self.z0 = self.z1
+                    self.z1 = tmp
+
+                self.x0 = outer_self.grid_x_coordinates[x_i]
+                self.x1 = outer_self.grid_x_coordinates[x_i + 1]
+
+                if self.x0 > self.x1:
+                    tmp = self.x0
+                    self.x0 = self.x1
+                    self.x1 = tmp
+
+                # tile dimensions
+                self.dz = self.z1 - self.z0
+                self.dx = self.x1 - self.x0
+
+                # f array
+                self.f = np.zeros(16)
+                self.__populate_f_array__()
+
+                self.a = outer_self.A_inv.dot(self.f)
 
 
-            # df / d_x
-            k1, k2 = 1, 1
+            def __get_value_and_derivatives__(self, delta_z_i: int, delta_x_i: int) -> Tuple[float, float, float, float]:
+                def f(z_i, x_i):
+                    return outer_self.data[z_i, x_i]
 
-            if local_x_i == 0:
-                k1 = 0
-            elif local_x_i == self.n_x - 1:
-                k2 = 0
+                z_i = self.z_i + delta_z_i
+                x_i = self.x_i + delta_x_i
+
+                minus_hz = 1 if not z_i == 0 else 0
+                plus_hz = 1 if not z_i >= outer_self.n_z - 1 else 0
+                delta_z = (minus_hz + plus_hz)
+
+                minus_hx = 1 if not x_i == 0 else 0
+                plus_hx = 1 if not x_i >= outer_self.n_x - 1 else 0
+                delta_x = (minus_hx + plus_hx)
+
+                f_ = f(z_i, x_i)
+                fz = (f(z_i + plus_hz, x_i) - f(z_i - minus_hz, x_i)) / delta_z
+                fx = (f(z_i, x_i + plus_hx) - f(z_i, x_i - minus_hx)) / delta_x
+
+                fzx = (  f(z_i + plus_hz, x_i + plus_hx)
+                       - f(z_i - minus_hz, x_i + plus_hx)
+                       - f(z_i + plus_hz, x_i - minus_hx)
+                       + f(z_i - minus_hz, x_i - minus_hx)
+                      ) / (delta_x * delta_z)
+
+                return f_, fz, fx, fzx
             
-            f[8 + index] = (self.data[local_z_i, local_x_i - k1] - self.data[local_z_i, local_x_i + k2]) / (self.grid_x_coordinates[local_x_i - k1] - self.grid_x_coordinates[local_x_i + k2])
+        
+            def __populate_f_array__(self):
+                for index, (delta_z_i, delta_x_i) in enumerate([(0, 0), (1, 0), (0, 1), (1, 1)]):
+                    f, fz, fx, fzx = self.__get_value_and_derivatives__(delta_z_i, delta_x_i)
+                    self.f[index + 0 ] = f
+                    self.f[index + 4 ] = fz * self.dz
+                    self.f[index + 8 ] = fx * self.dx
+                    self.f[index + 12] = fzx * self.dx * self.dz
+            
+            
+            def get_relative_pos(self, z: float, x: float) -> int:
+                dz = 0
+                if z > self.z1 and self.z_i != outer_self.n_z - 2:
+                    dz = 1
+                elif z < self.z0 and self.z_i != 0:
+                    dz = -1
+                
+                dx = 0
+                if x > self.x1 and self.x_i != outer_self.n_x - 2:
+                    dx = 1
+                elif x < self.x0 and self.x_i != 0:
+                    dx = -1
+                
+                return dz, dx
 
-            # https://math.stackexchange.com/q/3296431
-            # df / d_z d_x
-            f[12 + index] = self.data[local_z_i + h2, local_x_i + k2] \
-                          - self.data[local_z_i + h2, local_x_i - k1] \
-                          - self.data[local_z_i - h1, local_x_i + k2] \
-                          + self.data[local_z_i - h1, local_x_i - k1] \
-                          / \
-                          ( \
-                            (self.grid_x_coordinates[local_x_i - k1] - self.grid_x_coordinates[local_x_i + k2]) \
-                            * \
-                            (self.grid_z_coordinates[local_z_i - h1] - self.grid_z_coordinates[local_z_i + h2])  \
-                          )
 
-        return f
+            def get_value_at(self, z: float, x: float) -> Optional[float]:
 
-    def __find_grid_square__(self, z: float, x: float) -> Tuple[int, int]:
+                z_bar = (z - self.z0) / (self.z1 - self.z0)
+                x_bar = (x - self.x0) / (self.x1 - self.x0)
+
+                result = 0
+                for j in range(4):
+                    for i in range(4):
+                        result += self.a[i + j * 4] * z_bar**i * x_bar**j
+                
+                return result
+            
+
+            def __repr__(self):
+                return "T{" + f"{self.z0, self.x0} -> {self.z1, self.x1}" + "}"
+                
+        return Tile(tile_z_i, tile_x_i)
+
+
+    def __find_grid_square__(self, z: float, x: float) -> 'Tile':
         """Finds row and column of square that contains point with coordinates z, x.
 
         Args:
@@ -160,16 +219,15 @@ class AerodynamicLoad:
             Tuple[int, int]: Row and column of the square.
         """
 
-        id_z = (np.abs(self.grid_z_coordinates - z)).argmin()
-        id_x = (np.abs(self.grid_x_coordinates - x)).argmin()
+        # exempt last value as its index does not correspond to a tile
+        id_z = (np.abs(self.grid_z_coordinates[:-1] - z)).argmin()
+        id_x = (np.abs(self.grid_x_coordinates[:-1] - x)).argmin()
 
-        if self.grid_z_coordinates[id_z] >= z and id_z != 0:
-            id_z -= 1
+        tile = self.tiles[id_z][id_x]        
 
-        if self.grid_x_coordinates[id_x] >= x and id_x != 0:
-            id_x -= 1
+        dz, dx = tile.get_relative_pos(z, x)
+        return self.tiles[id_z + dz][id_x + dx]
 
-        return id_z, id_x
 
     def get_value_at(self, z: float, x: float) -> float:
         """Finds the value of the aerodynamic load at the given position (z, x).
@@ -182,16 +240,25 @@ class AerodynamicLoad:
             float: Aerodynamic load in kN/m^2 at point (z, x).
         """
 
-        z_i, x_i = self.__find_grid_square__(z, x)
 
-        result = 0
+        tile = self.__find_grid_square__(z, x)
+        result = tile.get_value_at(z, x)
+        if result is None:
+            print(f"WRONGLY tried to find {z, x} in {tile}")
+            print("z-coords:")
+            print(self.grid_z_coordinates)
+            print("x-coords:")
+            print(self.grid_x_coordinates)
 
-        a_ijs = self.grid_rectangles[z_i, x_i]
-        for i in range(4):
-            for j in range(4):
-                result += a_ijs[i + j * 4] * z**i * x**j
+            print("np.abs(self.grid_z_coordinates - z):")
+            print(np.abs(self.grid_z_coordinates - z))
 
-        return result / 1e3
+            print("np.abs(self.grid_x_coordinates - x):")
+            print(np.abs(self.grid_x_coordinates - x))
+
+            exit(0)
+
+        return result
 
 
 
