@@ -19,8 +19,11 @@ class Aileron():
         self.n_st = n_st #(number of stringers)
         self.d_1 = d_1*0.01 #m
         self.d_3 = d_3*0.01 #m
-        self.theta = theta #deg
+        self.theta = math.radians(theta) #rad
         self.P = P*1000 #N
+
+        self.x_I = x_2 - 0.5*x_a
+        self.x_II = x_2 + 0.5*x_a
 
         #Material properties obtianed from http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T3
 
@@ -226,7 +229,7 @@ class Aileron():
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 A320.stringersPosition()
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     print(A320.st_pos)
     print(A320.zCentroid())
     plt.plot(-A320.st_pos[:,1], A320.st_pos[:,0])
