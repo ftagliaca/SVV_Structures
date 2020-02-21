@@ -204,9 +204,9 @@ class Aileron():
         z_i = z-coordinate of station
         '''
 
-        theta = (i-1)*math.pi/N_z
-        theta_1 = i*math.pi/N_z
-        z_i = -0.5*(0.5*self.C_a*(1-np.cos(theta))+0.5*self.C_a*(1-np.cos(theta_1)))
+        theta = (i - 1) * math.pi/N_z
+        theta_1 = i * math.pi/N_z
+        z_i = -0.5 * (0.5 * self.C_a * (1 - np.cos(theta)) + 0.5 * self.C_a * (1 - np.cos(theta_1)))
 
         return z_i
 
@@ -220,9 +220,9 @@ class Aileron():
         x_i = x-coordinate of station
         '''
 
-        theta = (i-1)*math.pi/N_x
-        theta_1 = i*math.pi/N_x
-        x_i = 0.5*(0.5*self.l_a*(1-np.cos(theta))+0.5*self.l_a*(1-np.cos(theta_1)))
+        theta = (i - 1) * math.pi/N_x
+        theta_1 = i * math.pi/N_x
+        x_i = 0.5 * (0.5 * self.l_a * (1 - np.cos(theta)) + 0.5 * self.l_a * (1 - np.cos(theta_1)))
 
         return x_i
 
