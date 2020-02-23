@@ -18,6 +18,7 @@ def integrate(f, a, b, n = 100, p = 1):
 
 
 def integrate2D(f, a, b, c, d, nx, ny, p = 1):
+    #http://hplgit.github.io/prog4comp/doc/pub/p4c-sphinx-Python/._pylight004.html#reusing-code-for-one-dimensional-integrals
     def g(x):
         return integrate(lambda y: f(x, y), c, d, n = ny)
 
