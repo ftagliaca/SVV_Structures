@@ -30,8 +30,7 @@ def vonMises(sigma, tau):
 
     sigma_vm = Von Mises stress
     '''
-    sigma_vm = sqrt(((sigma[0]-sigma[1])**2 + (sigma[1]-sigma[2])**2 + (sigma[0]-sigma[2])**2)/2\
-    3*(tau[0]**2+tau[1]**2+tau[2]**2))
+    sigma_vm = sqrt(((sigma[0]-sigma[1])**2 + (sigma[1]-sigma[2])**2 + (sigma[0]-sigma[2])**2)/2+3*(tau[0]**2+tau[1]**2+tau[2]**2))
     return sigma_vm
 
 def solveInternal(alr, q):
@@ -55,9 +54,11 @@ def solveInternal(alr, q):
                    [alr.x_1,1,0,0,0,0,0,0,0,0,0],
                    [alr.x_3,1,0,0,-((alr.x_3-alr.x_1)**3)/(6*alr.E*alr.Izz),0,-((alr.x_3-alr.x_2)**3)/(6*alr.E*alr.Izz),0,0,0,-((alr.x_3-alr.x_I)**3)*sin(alr.theta)/(6*alr.E*alr.Izz)],
                    [0,0,0,0,0,-1,0,-1,0,-1,-cos(alr.theta)],
-                   [0,0,0,0,1,0,1,0,1,0,sin(alr.theta)]])
+                   [0,0,0,0,1,0,1,0,1,0,sin(alr.theta)],
+                   [0,0,0,0,0,alr.x_1-alr.l_a,0,alr.x_2-alr.l_a,0,alr.x_3-alr.l_a,(alr.x_I-alr.l_a)*sin(alr.theta)],
+                   [0,0,0,0,alr.l_a-alr.x_1,0,alr.l_a-alr.x_2,0,alr.l_a-alr.x_3,0,(alr.l_a-alr.x_I)*cos(alr.theta)]])
 
-    d = np.matrix([[-alr.d_1*sin(alr.theta)],
+    b = np.matrix([[-alr.d_1*sin(alr.theta)],
                    [0],
                    [-alr.d_3*sin(alr.theta)+alr.P*cos(alr.theta)*((alr.x_3-alr.x_II)**3)/(2*alr.E*alr.Iyy)],
                    [integrate2D(q,0,alr.x_I,-alr.C_a,0,10,10,p=4)/(alr.E*alr.Izz)],
@@ -65,4 +66,8 @@ def solveInternal(alr, q):
                    [alr.d_1*cos(alr.theta)-integrate2D(q,0,alr.x_1,-alr.C_a,0,10,10,p=4)/(alr.E*alr.Izz)],
                    [alr.d_3*cos(alr.theta)-integrate2D(q,0,alr.x_3,-alr.C_a,0,10,10,p=4)/(alr.E*alr.Izz)-alr.P*sin(alr.theta)*((alr.x_3-alr.x_II)**3)/(2*alr.E*alr.Izz)],
                    [-alr.P*cos(alr.theta)],
-                   [integrate2D(q,0,alr.x_I,-alr.C_a,0,10,10,p=1)+alr.P*sin(alr.theta)]])
+                   [integrate2D(q,0,alr.x_I,-alr.C_a,0,10,10,p=1)+alr.P*sin(alr.theta)],
+                   [alr.P*(alr.x_II-alr.l_a)*cos(alr.theta)],
+                   [integrate2D(q,0,alr.l_a,-alr.C_a,0,10,10,p=2)]])
+
+    return np.linalg.solve(A,b)

@@ -86,14 +86,14 @@ class Aileron():
         A_spar = self.t_sp * self.h
         A_stif = self.w_st * self.t_st + self.h_st * self.t_st
 
-        Q_stiff = 0 #same as z~ * A
+        self.Q_stiff = 0 #same as z~ * A
         for i in range (self.n_st):
             z_i = self.st_pos[i,1] #z coordinate of ith stringer
-            Q_stiff += z_i *A_stif    #+= is the same as Q_stiff + .....
+            self.Q_stiff += z_i *A_stif    #+= is the same as Q_stiff + .....
 
 
 
-        self.z_centroid = (Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
+        self.z_centroid = (self.Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
         /(A_halfcircle + A_skin + A_spar + self.n_st * A_stif)
 
         return self.z_centroid
@@ -115,28 +115,28 @@ class Aileron():
 
         return self.A
 
-    def momInertia(self, stringercoordinates):
+    def momInertia(self):
         #be careful with units. did not look at this yet
         r = self.h / 2
 
 
         #the length of one of the diagonal skins
-        l_skin = math.sqrt((self.c_a-r)^2 + r^2)
+        l_skin = math.sqrt((self.C_a-r)**2 + r**2)
         #and the areas
         A_halfcircle = math.pi *r* self.t_sk
         A_skin = 2 * l_skin * self.t_sk          #for both two diagonal skins
         A_spar = self.t_sp * self.h
-        A_stif = self.w_st * t_st + self.h_st *t_st #for ONE stiffener
+        A_stif = self.w_st * self.t_st + self.h_st *self.t_st #for ONE stiffener
 
 
         #I_yy calculations
         #Important to note that the dz's are chosen in accordance with points we
         #calculated the individual Moments of Inertia around
-        dz_skin = -((self.c_a-r)/2+r)
+        dz_skin = -((self.C_a-r)/2+r)
         dz_spar = -r
         dz_halfcircle = -r
 
-        dz_stif = (Q_stiff)/(self.n_st * A_stif)
+        dz_stif = (self.Q_stiff)/(self.n_st * A_stif)
 
         I_yy = A_halfcircle * dz_halfcircle**2 + A_skin * dz_skin**2 + A_spar * dz_spar**2
 
@@ -149,16 +149,16 @@ class Aileron():
 
         #now we add the influence of the stringers on I_yy
         for i in range(self.n_st):
-            dz_st = stringercoordinates[i,1]
-            dy_st = stringercoordinates[i,0]
+            dz_st = self.st_pos[i,1]
+            dy_st = self.st_pos[i,0]
 
-            I_yy = I_yy + A_st * dz_st**2
-            I_zz = I_zz + A_st * dy_st**2
+            I_yy += + A_stif * dz_st**2
+            I_zz += + A_stif * dy_st**2
 
 
 
         #Moments of inertia of separate parts around own centroids.
-        Beta = math.atan(r/(self.c_a-r))
+        Beta = math.atan(r/(self.C_a-r))
         I_zzskin= self.t_sk*(l_skin)**(3)*math.sin(Beta)**(2)/12
         I_yyskin= self.t_sk*(l_skin)**(3)*math.cos(Beta)**(2)/12
 
