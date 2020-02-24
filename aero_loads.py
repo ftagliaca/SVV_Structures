@@ -1,13 +1,13 @@
-import numpy as np
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Union, IO
 from aileronProperties import Aileron
+import numpy as np
 
 # http://fourier.eng.hmc.edu/e176/lectures/ch7/node7.html
 # https://en.wikipedia.org/wiki/Bicubic_interpolation
  
 class AerodynamicLoad:
     
-    def __init__(self, aileron: Aileron, filename: str):
+    def __init__(self, aileron: Aileron, filename: Union[str, IO]):
         self.z_i, self.x_i = aileron.z_i, aileron.x_i # [] -> [m]
 
         self.data = np.genfromtxt(filename, delimiter=',') # [kN/m^2]
@@ -111,7 +111,7 @@ class AerodynamicLoad:
 
         class Tile:
             
-            # z_i and x_i are also the index of the corner with smallest z and x
+            # z_i and x_i are also the index of the corner with smallest z and x, respectively
             def __init__(self, z_i: int, x_i: int):
                 self.z_i = z_i
                 self.x_i = x_i
@@ -279,7 +279,9 @@ class AerodynamicLoad:
         tile = self.tiles[id_z][id_x]        
 
         dz, dx = tile.get_relative_dir(z, x)
-        return self.tiles[id_z + dz][id_x + dx]
+        tile = self.tiles[id_z + dz][id_x + dx]
+        
+        return tile
 
 
     def get_value_at(self, z: float, x: float) -> float:
