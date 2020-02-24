@@ -280,8 +280,7 @@ class AerodynamicLoad:
 
         dz, dx = tile.get_relative_dir(z, x)
         tile = self.tiles[id_z + dz][id_x + dx]
-        if tile.get_relative_dir(z, x) != (0, 0):
-            print(f"Using {tile} for {z, x}")
+        
         return tile
 
 
