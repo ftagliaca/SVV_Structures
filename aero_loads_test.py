@@ -25,14 +25,15 @@ import random
 
 class AeroLoadsTest(TestCase):
 
-    def generic_test_aero_loads(self, f: int):
+    def generic_test_aero_loads(self, f: int, label: str = 'Aerodynamic Loading'):
         def f_(x: np.ndarray, y: np.ndarray):
             return f(x[:, np.newaxis], y[np.newaxis, :])
 
         # Source data for interpolation
         
-        x = np.arange(-5, 5 + 0.5, 0.011)
-        y = np.arange(-7, 7 + 0.5, 0.11)
+        x = np.arange(-0.5, 0.5, 0.011)
+        y = np.arange(-7, 7, 0.11)
+        data_x, data_y = np.meshgrid(x, y, indexing='ij')
         data = f_(x, y)
 
         def z_i(i, N_z = -1):
@@ -44,59 +45,69 @@ class AeroLoadsTest(TestCase):
         A320.z_i, A320.x_i = z_i, x_i
 
         # Target and verification data
-        interp_x = np.arange(-5 + 0.25, 5 + 0.25, 0.03)
-        interp_y = np.arange(-7 + 0.25, 7 + 0.25, 0.03)
+        interp_x = np.arange(-0.5 + 0.02, 0.5, 0.01)
+        interp_y = np.arange(-7 + 0.1, 7, 0.04)
         data_verification = f_(interp_x, interp_y)
         data_interpolation = data_verification * 0
         mesh_x, mesh_y = np.meshgrid(interp_x, interp_y, indexing='ij')
-
 
         # interpolation
         with TemporaryFile() as file:
             np.savetxt(file, data, delimiter=',')
             file.seek(0, 0)
 
-            aero_loads = AerodynamicLoad(A320, file)
-            
-            for x_i, x in enumerate(interp_x):
-                for y_i, y in enumerate(interp_y):
-                    data_interpolation[x_i, y_i] = aero_loads.get_value_at(x, y)
+            aero_loads = AerodynamicLoad(A320, file, correction_factor=1)
         
-        print(f"average diff: {np.average(data_verification - data_interpolation)}")
+        data_interpolation = aero_loads
+
+        for x_i, x in enumerate(interp_x):
+            for y_i, y in enumerate(interp_y):
+                data_interpolation[x_i, y_i] = aero_loads.get_value_at(x, y)
+        
+        error = np.abs(np.average(data_verification - data_interpolation))
+        print(f"average error: {error}")
+
+        fig = plt.figure(label)
+        ax = plt.axes(projection='3d')
+        
+
+#        ax.plot_wireframe(mesh_x, mesh_y, data_verification, color='black', label="Verification data")
+        ax.plot_wireframe(mesh_x, mesh_y, data_interpolation, color='green', label=f"Interpolated data (Avg Error: {error})")
+        ax.plot_wireframe(data_x, data_y, data, color='red', label="Source data")
+
+
+        ax.set_xlabel("z")
+        ax.set_ylabel("x")
+        ax.set_zlabel("y")
+
+        plt.legend()
+
+        fig.show()
+
         self.assertAlmostEqual(np.average(data_verification - data_interpolation), 0, 3)
-
-#        plt.figure('Aerodynamic Loading')
-#        ax = plt.axes(projection='3d')
-#        ax.plot_wireframe(mesh_x, mesh_y, data_verification, color='black')
-#        ax.plot_wireframe(mesh_x, mesh_y, data_interpolation, color='green')
-#
-#
-#        ax.set_xlabel("z")
-#        ax.set_ylabel("x")
-#        ax.set_zlabel("y")
-#
-#        plt.show()
-
 
     def test_1(self):
         print("Test 1:")
-        for _ in range(5):
+        for i, _ in enumerate(range(5)):
             r = random.random()
             f = lambda x1, x2: np.sin(x1 * x2 * 0.25 * r)
-            self.generic_test_aero_loads(f)
+            self.generic_test_aero_loads(f, label=f'Test 1.{i+1}, r = {r}')
 
     def test_2(self):
         print("Test 2:")
-        for _ in range(5):
+        for i, _ in enumerate(range(5)):
             r = random.random()
             r1 = 1 if random.random() >= 0.5 else r
             r2 = 1 if random.random() < 0.5 else r
 
             f = lambda x1, x2: np.sin(x1 * r2) * np.sin(x2 * r1)
-            self.generic_test_aero_loads(f)
+            self.generic_test_aero_loads(f, label=f'Test 2.{i+1}, r = {r}')
+        
+        plt.show()
 
 if __name__ == "__main__":
     unittest.main()
+    
 
 
 
