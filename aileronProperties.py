@@ -22,8 +22,8 @@ class Aileron():
         self.theta = math.radians(theta) #rad
         self.P = P*1000 #N
 
-        self.x_I = x_2 - 0.5*x_a
-        self.x_II = x_2 + 0.5*x_a
+        self.x_I = self.x_2 - 0.5*self.x_a
+        self.x_II = self.x_2 + 0.5*self.x_a
 
         #Material properties obtianed from http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T3
 
@@ -124,15 +124,16 @@ class Aileron():
         A_halfcircle = math.pi *r* self.t_sk
         A_skin = 2 * l_skin * self.t_sk          #for both two diagonal skins
         A_spar = self.t_sp * self.h
-        A_stif = self.w_st * self.t_st + self.h_st *self.t_st #for ONE stiffener
+        A_stif = (self.w_st + self.h_st)*self.t_st #for ONE stiffener
 
-
+        zCentroid = np.abs(self.zCentroid())
+        print(zCentroid)
         #I_yy calculations
         #Important to note that the dz's are chosen in accordance with points we
         #calculated the individual Moments of Inertia around
-        dz_skin = -((self.C_a-r)/2+r)
-        dz_spar = -r
-        dz_halfcircle = -r
+        dz_skin = -((self.C_a-r)/2+r)+zCentroid
+        dz_spar = -r+zCentroid
+        dz_halfcircle = -r+zCentroid
 
         dz_stif = (self.Q_stiff)/(self.n_st * A_stif)
 
@@ -147,7 +148,7 @@ class Aileron():
 
         #now we add the influence of the stringers on I_yy
         for i in range(self.n_st):
-            dz_st = self.st_pos[i,1]
+            dz_st = self.st_pos[i,1]+zCentroid
             dy_st = self.st_pos[i,0]
 
             I_yy += A_stif * dz_st**2
@@ -166,8 +167,8 @@ class Aileron():
 
         I_yyhc = I_zzhc = 0.5*math.pi*self.t_sk*r**3
 
-        I_zztot = I_zz + I_zzskin + I_zzhc + I_zzspar
-        I_yytot = I_yy + I_yyskin + I_yyhc
+        I_zztot = I_zz + 2*I_zzskin + I_zzhc + I_zzspar
+        I_yytot = I_yy + 2*I_yyskin + I_yyhc
 
         self.Izz = I_zztot
         self.Iyy = I_yytot
