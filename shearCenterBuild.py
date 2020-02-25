@@ -1,6 +1,6 @@
 """
 
-Author: Sherman Lee, Sadra Mogaddam
+Author: Sherman Lee
 It's given that the formula for the shear flow at any given point from a distance is (insert formula)
 Sz and Sy are taken to be nonzero so Izz and Iyy are required.
 * The geometry is constant throughout
@@ -17,52 +17,63 @@ import math as m
 import numpy as np
 
 # import of class in order to use geometrical properties
-# Note that this only imports the class, not the geometric values of the aircraft.
-from aileronProperties import Aileron
+#
+
+from aileronProperties import Aileron, A320
+
+analysed_aircraft = A320
 
 
 # solve for base shear flow
 
+def z_ii(aircraft_class):
+    """
+    gets z_II, the z length from spar to trailing edge of the aileron (also z-length of section II).
+    :param aircraft_class: This uses the given geometric values from the aileron
+    :return: length of z_II.
+    """
+    z_2 = aircraft_class.C_a - aircraft_class.h
+    return z_2
 
-def get_constants(Sz, Sy, Izz, Iyy):
+
+def get_constants(Szy_list, aircraft_class):
     '''
-    Step for calculating the constants Lambda = - Sz / Iyy and Lambda = - Sy / Izz. Note Lambda is arbitrarily set, not
-    equivalent to anything in literature.
-    :param Sz: Shear in Z direction
-    :param Sy: Shear in Y direction
-    :param Izz: MoI around z axis
-    :param Iyy: MoI around y axis
+    Step for calculating the constants Lambda = - Sz / Iyy and Lambda = - Sy / Izz. Note Lambda is arbitrarily set \
+    during the derivation phase, not equivalent to anything in literature.
+    :param Szy_list: list of size 2 of the shear forces in z and y direction respectively.
+    : param aircraft_class: Using the MoI values calculated from the aileronProperties section.
     :return: tuple containing both Lambdas (Lambda_z, Lambda_y)
     '''
 
-    Lambda_z = - Sz / Iyy
-    Lambda_y = - Sy / Izz
+    Lambda_z = - Szy_list[0] / aircraft_class.Iyy
+    Lambda_y = - Szy_list[1] / aircraft_class.Izz
 
     return np.array([Lambda_z, Lambda_y])
 
 
-def get_idealised_shear_flow(boom_area_array, x_y_array, num_stiffeners):
+def get_idealised_shear_flow(aircraft_class):
     '''
-    Gets the sum of base shear flow of the idealised boom sections only. They are referenced in Sherman's derivations
-    as Epsilon_z and Epsilon_y.
+    Gets the sum of base shear flow of the IDEALISED BOOM SECTIONS ONLY. They are referenced in Sherman's derivations
+    as Epsilon_z and Epsilon_y, but are truncated in the variables used below for convenience.
     :boom_area_array:
     :x_y_array:
     :return:
     '''
-    if boom_area_array.size == num_stiffeners * 2:
+    str_pos = aircraft_class.stringersPosition()  # called st_pos in original class file
+    if str_pos.size() == aircraft_class.n_st * 2:  # str_pos is a 17 x 2 numpy array
         # initialise output sum
-        Epsilon_z = 0
-        Epsilon_y = 0
-        for iter in range(0, num_stiffeners):
-            Epsilon_z += boom_area_array[iter] * x_y_array[iter][0]
-            Epsilon_y += boom_area_array[iter] * x_y_array[iter][1]
+        eps_z = 0
+        eps_y = 0
+        for iter in range(0, aircraft_class.n_st):
+            eps_z += aircraft_class.A_spar * str_pos[iter][0]
+            eps_y += aircraft_class.A_spar * str_pos[iter][1]
 
-        return np.array([Epsilon_z, Epsilon_y])
+        return np.array([eps_z, eps_y])
     else:
         raise Exception("Something's wrong, I can feel it!")
 
 
-def get_shear_flow_1(Lambda_array, t, h_spar, z_bar, z_spar, Epsilon_array):
+def get_shear_flow(lambd_array, aircraft_class, eps_array):
     """
     Gets the first shear flow equation for the base shear flows in the semi-circular profile from Sherman's derived
     equation
@@ -73,9 +84,22 @@ def get_shear_flow_1(Lambda_array, t, h_spar, z_bar, z_spar, Epsilon_array):
     :param z_bar:
     :return:
     """
-    radius = h_spar / 2
-    q_11 = Lambda_array[0] * (t * (radius * radius + radius * z_bar * m.pi) + Epsilon_array[0]) + Lambda_array[1] * (
-            t * radius * radius) + Epsilon_array[1]
-    q_12 = Lambda_array[0] * (t * h_spar * h_spar + Epsilon_array[0]) + Lambda_array[1] * (
-            t * (z_spar - z_spar) * h_spar + Epsilon_array[1]) + q_11
-    q_13
+    h_spar = aircraft_class.h  # height of aileron in y direction, also the length of the spar
+    l_sk = aircraft_class.l_s  # length of straight skin section
+    z_bar = aircraft_class.z_centroid  # z_coord of the centroid
+    z_tr = z_ii(aircraft_class)  # z length of the trailing edge section in cross-section(section II)
+    radius = h_spar / 2  # half the length of the spar
+    t_spar = aircraft_class.t_sp    # thickness of spar
+    t_skin = aircraft_class.t_sk    # thickness of skin
+    q_11 = lambd_array[0] * (t_skin * (radius * radius + radius * z_bar * m.pi) + eps_array[0]) + lambd_array[1] * (
+            t_skin * radius * radius) + eps_array[1]
+    q_12 = lambd_array[0] * (t_spar * h_spar * h_spar + eps_array[0]) + lambd_array[1] * (
+            t_spar * (radius - z_bar) * h_spar + eps_array[1]) + q_11
+    q_13 = q_11  # taking the assumption that symmetry = same shear flow
+
+    q_21 = lambd_array[0] * (t_skin * (z_tr * l_sk + (radius - z_bar)) + eps_array[0]) + lambd_array[1] * (
+                t_skin * - l_sk / 2 * radius + eps_array[1])
+    q_22 = lambd_array[0] *  eps_array[0] + lambd_array[1] * (t_spar * (radius + z_bar) * radius + eps_array[1]) + q_21
+    q_23 = q_21     # due the symmetry
+
+
