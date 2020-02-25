@@ -335,9 +335,9 @@ class AerodynamicLoad:
         Returns:
             float or np.ndarray: Aerodynamic load in N/m^2 at point(s) (z, x).
         """
+        z_coordinates: np.ndarray = np.array(z_coordinates, ndmin=1)
+        x_coordinates: np.ndarray = np.array(x_coordinates, ndmin=1)
         Z, X = np.meshgrid(z_coordinates, x_coordinates, indexing='ij')
-        z_coordinates: np.ndarray = np.array(Z, ndmin=1)
-        x_coordinates: np.ndarray = np.array(X, ndmin=1)
         return self.get_value_at(Z.flatten(), X.flatten()).reshape((z_coordinates.shape[0], x_coordinates.shape[0]))
 
     def get_value_at(self, z: Union[float, np.ndarray], x: Union[np.ndarray, float]) -> Union[float, np.ndarray]:
@@ -355,8 +355,6 @@ class AerodynamicLoad:
         x: np.ndarray = np.array(x, ndmin=1)
 
         tiles = self.__find_grid_squares__(z, x)
-        print("-"*10)
-        print(np.size(tiles),np.size(x),np.size(z))
         result = [tiles[i].get_value_at(z[i], x[i]) for i, _ in enumerate(z)]
 
-        return np.array(result)
+        return np.array(result, dtype='float')

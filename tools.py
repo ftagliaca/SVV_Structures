@@ -5,7 +5,6 @@ def macaulay(x,x1):
 
 def integrate1(f, a, b, n = 100, p = 1):
     X = np.linspace(a, b, num = n)
-    print(X)
     h = (b-a)/(n-1)
     if p == 1:
         result = np.sum(f(X))
@@ -14,7 +13,7 @@ def integrate1(f, a, b, n = 100, p = 1):
         result *= h
     else:
         result = 0
-        for i, x in enumerate(X):
+        for i, _ in enumerate(X):
             if i != 0:
                 result += (integrate1(f, 0, X[i], n = n, p = p-1)+integrate1(f, 0, X[i-1], n = n, p = p-1))*h/2
 
