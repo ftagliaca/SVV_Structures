@@ -7,10 +7,23 @@ import numpy as np
  
 class AerodynamicLoad:
     
-    def __init__(self, aileron: Aileron, filename: Union[str, IO]):
+    def __init__(self, aileron: Aileron, filename: Union[str, IO], correction_factor: float = 1e3):
+        """Initialises a new aerodynamic load object
+
+        Args:
+            aileron (Aileron): The aileron object
+            filename (str or file-like object): The file containing the aerodynamic load data
+            correct_factor (float): A factor by which the data is multiplied to account e.g. for different units (Default: 1000 N/kN) 
+
+        Returns:
+            AerodynamicLoad: The load object.
+        """
+
         self.z_i, self.x_i = aileron.z_i, aileron.x_i # [] -> [m]
 
         self.data = np.genfromtxt(filename, delimiter=',') # [kN/m^2]
+        self.data *= correction_factor
+
         self.n_z, self.n_x = self.data.shape
 
         # Coordinate of every data point [z, x]        
