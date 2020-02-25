@@ -75,7 +75,7 @@ class Aileron():
 
         #now calculate centroids of separate parts
         c_halfcircle = - (1 - 2*r/math.pi)
-        c_skin = - 0.5*(self.C_a - r)
+        c_skin = - 0.5*(self.C_a - r) - r
         c_spar = - r
 
         #the length of one of the diagonal skins
@@ -87,11 +87,9 @@ class Aileron():
         A_stif = self.w_st * self.t_st + self.h_st * self.t_st
 
         self.Q_stiff = 0 #same as z~ * A
-        for i in range (self.n_st):
+        for i in range(self.n_st):
             z_i = self.st_pos[i,1] #z coordinate of ith stringer
-            self.Q_stiff += z_i *A_stif    #+= is the same as Q_stiff + .....
-
-
+            self.Q_stiff += z_i * A_stif    #+= is the same as Q_stiff + .....
 
         self.z_centroid = (self.Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
         /(A_halfcircle + A_skin + A_spar + self.n_st * A_stif)
@@ -152,15 +150,15 @@ class Aileron():
             dz_st = self.st_pos[i,1]
             dy_st = self.st_pos[i,0]
 
-            I_yy += + A_stif * dz_st**2
-            I_zz += + A_stif * dy_st**2
+            I_yy += A_stif * dz_st**2
+            I_zz += A_stif * dy_st**2
 
 
 
         #Moments of inertia of separate parts around own centroids.
         Beta = math.atan(r/(self.C_a-r))
-        I_zzskin= self.t_sk*(l_skin)**(3)*math.sin(Beta)**(2)/12
-        I_yyskin= self.t_sk*(l_skin)**(3)*math.cos(Beta)**(2)/12
+        I_zzskin= self.t_sk*(l_skin)**3*(math.sin(Beta)**2)/12
+        I_yyskin= self.t_sk*(l_skin)**3*(math.cos(Beta)**2)/12
 
         I_zzspar = self.t_sp * self.h**3 / 12
         #I_yyspar = self.h * self.t_sp**3 / 12
