@@ -265,7 +265,7 @@ class AerodynamicLoad:
                 x_bar = (x - self.x0) / (self.x1 - self.x0)
 
                 return (self.a * z_bar ** z_exponents * x_bar ** x_exponents).sum()
-            
+
 
             def __repr__(self):
                 return "T{" + f"{self.z0, self.x0} -> {self.z1, self.x1}" + "}"
@@ -309,22 +309,22 @@ class AerodynamicLoad:
 
         z: np.ndarray = np.array(z, ndmin=1)
         x: np.ndarray = np.array(x, ndmin=1)
-        
+
         def find_closest(reference_coords: np.ndarray, coords: np.ndarray) -> np.ndarray:
             ref_coords_array = np.tile(reference_coords[:, np.newaxis], (1, len(coords)))
 
             diff = coords - ref_coords_array
             diff[diff < 0] = diff.max()
             indices = diff.argmin(axis=0)
-            
+
             return indices
-        
+
         # exempt last value as its index does not correspond to a tile
         id_z = find_closest(self.grid_z_coordinates[:-1], z)
         id_x = find_closest(self.grid_x_coordinates[:-1], x)
 
         tiles = self.tiles[id_z, id_x]
-        
+
         return tiles
 
 
@@ -342,6 +342,7 @@ class AerodynamicLoad:
         x_coordinates: np.ndarray = np.array(x_coordinates, ndmin=1)
 
         Z, X = np.meshgrid(z_coordinates, x_coordinates, indexing='ij')
+        
         return self.get_value_at(Z.flatten(), X.flatten()).reshape((z_coordinates.shape[0], x_coordinates.shape[0]))
 
 
@@ -362,7 +363,4 @@ class AerodynamicLoad:
         tiles = self.__find_grid_squares__(z, x)
         result = [tiles[i].get_value_at(z[i], x[i]) for i, _ in enumerate(z)]
 
-        return np.array(result)
-
-
-
+        return np.array(result, dtype='float')
