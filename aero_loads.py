@@ -40,14 +40,14 @@ class AerodynamicLoad:
             self.data = self.data[:, ::-1]
 
         # 2D array that contains all the tiles composing the interpolation.
-        self.tiles: List['Tile'] = [[None for _ in range(self.n_x)] for _ in range(self.n_z)]
+        self.tiles: np.ndarray = np.empty((self.n_z, self.n_x), dtype='object')
 
         # Matrix necessary to calculate the coefficients of interpolation.
         self.A_inv = self.__generate_interpolation_matrix__()
 
         for i in range(self.n_z - 1):
             for j in range(self.n_x - 1):
-                self.tiles[i][j] = self.init_tile(i, j)
+                self.tiles[i, j] = self.init_tile(i, j)
 
 
     def __generate_interpolation_matrix__(self) -> np.ndarray:
@@ -121,6 +121,9 @@ class AerodynamicLoad:
         """
 
         outer_self = self
+
+        z_exponents: np.ndarray = np.tile(np.arange(0, 4), (4, 1)).flatten()
+        x_exponents: np.ndarray = np.arange(0, 4).repeat(4)
 
         class Tile:
             
@@ -260,12 +263,7 @@ class AerodynamicLoad:
                 z_bar = (z - self.z0) / (self.z1 - self.z0)
                 x_bar = (x - self.x0) / (self.x1 - self.x0)
 
-                result = 0
-                for j in range(4):
-                    for i in range(4):
-                        result += self.a[i + j * 4] * z_bar**i * x_bar**j
-                
-                return result
+                return (self.a * z_bar ** z_exponents * x_bar ** x_exponents).sum()
             
 
             def __repr__(self):
@@ -296,22 +294,68 @@ class AerodynamicLoad:
         
         return tile
 
+    def __find_grid_squares__(self, z: Union[float, np.ndarray], x: Union[float, np.ndarray]) -> 'Tile':
+        """Finds the tile that contains point with coordinates z, x.
 
-    def get_value_at(self, z: float, x: float) -> float:
+        Args:
+            z (float): z coordinate of point
+            x (float): x coordinate of point
+
+        Returns:
+            Tile: Tile containing the point.
+        """
+
+        z: np.ndarray = np.array(z, ndmin=1)
+        x: np.ndarray = np.array(x, ndmin=1)
+        
+        def find_closest(reference_coords: np.ndarray, coords: np.ndarray) -> np.ndarray:
+            ref_coords_array = np.tile(reference_coords[:, np.newaxis], (1, len(coords)))
+
+            diff = coords - ref_coords_array
+            diff[diff < 0] = diff.max()
+            indices = diff.argmin(axis=0)
+            
+            return indices
+        
+        # exempt last value as its index does not correspond to a tile
+        id_z = find_closest(self.grid_z_coordinates[:-1], z)
+        id_x = find_closest(self.grid_x_coordinates[:-1], x)
+
+        tiles = self.tiles[id_z, id_x]
+        
+        return tiles
+
+    def get_values_grid(self, z_coordinates: np.ndarray, x_coordinates: np.ndarray) -> np.ndarray:
+        """Finds the values of the aerodynamic load in the given (rectilinear) grid with the given z and x grid coordinates.
+
+        Args:
+            z (float or np.ndarray): z coordinate(s) of point of interest
+            x (float or np.ndarray): x coordinate(s) of point of interest
+
+        Returns:
+            float or np.ndarray: Aerodynamic load in N/m^2 at point(s) (z, x).
+        """
+        Z, X = np.meshgrid(z_coordinates, x_coordinates, indexing='ij')
+        return self.get_value_at(Z.flatten(), X.flatten()).reshape((z_coordinates.shape[0], x_coordinates.shape[0]))
+
+    def get_value_at(self, z: Union[float, np.ndarray], x: Union[np.ndarray, float]) -> Union[float, np.ndarray]:
         """Finds the value of the aerodynamic load at the given position (z, x).
 
         Args:
-            z (float): z coordinate of point of interest
-            x (float): x coordinate of point of interest
+            z (float or np.ndarray): z coordinate(s) of point of interest
+            x (float or np.ndarray): x coordinate(s) of point of interest
 
         Returns:
-            float: Aerodynamic load in kN/m^2 at point (z, x).
+            float or np.ndarray: Aerodynamic load in N/m^2 at point(s) (z, x).
         """
 
-        tile = self.__find_grid_square__(z, x)
-        result = tile.get_value_at(z, x)
+        z: np.ndarray = np.array(z, ndmin=1)
+        x: np.ndarray = np.array(x, ndmin=1)
 
-        return result
+        tiles = self.__find_grid_squares__(z, x)
+        result = [tiles[i].get_value_at(z[i], x[i]) for i, _ in enumerate(z)]
+
+        return np.array(result)
 
 
 
