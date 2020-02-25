@@ -74,7 +74,7 @@ class Aileron():
         r = self.h / 2
 
         #now calculate centroids of separate parts
-        c_halfcircle = - (1 - 2*r/math.pi)
+        c_halfcircle = - (r - 2*r/math.pi)
         c_skin = - 0.5*(self.C_a - r) - r
         c_spar = - r
 
@@ -84,7 +84,7 @@ class Aileron():
         A_halfcircle = math.pi *r* self.t_sk
         A_skin = 2 * l_skin * self.t_sk   #for two skins
         A_spar = self.t_sp * self.h
-        A_stif = self.w_st * self.t_st + self.h_st * self.t_st
+        A_stif = (self.w_st + self.h_st)* self.t_st
 
         self.Q_stiff = 0 #same as z~ * A
         for i in range(self.n_st):
@@ -127,7 +127,6 @@ class Aileron():
         A_stif = (self.w_st + self.h_st)*self.t_st #for ONE stiffener
 
         zCentroid = np.abs(self.zCentroid())
-        print(zCentroid)
         #I_yy calculations
         #Important to note that the dz's are chosen in accordance with points we
         #calculated the individual Moments of Inertia around
