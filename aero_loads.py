@@ -4,16 +4,16 @@ import numpy as np
 
 # http://fourier.eng.hmc.edu/e176/lectures/ch7/node7.html
 # https://en.wikipedia.org/wiki/Bicubic_interpolation
- 
+
 class AerodynamicLoad:
-    
+
     def __init__(self, aileron: Aileron, filename: Union[str, IO]):
         self.z_i, self.x_i = aileron.z_i, aileron.x_i # [] -> [m]
 
         self.data = np.genfromtxt(filename, delimiter=',') # [kN/m^2]
         self.n_z, self.n_x = self.data.shape
 
-        # Coordinate of every data point [z, x]        
+        # Coordinate of every data point [z, x]
         self.grid_z_coordinates = self.z_i(np.arange(self.n_z) + 1, N_z=self.n_z)
         self.grid_x_coordinates = self.x_i(np.arange(self.n_x) + 1, N_x=self.n_x)
 
@@ -43,10 +43,10 @@ class AerodynamicLoad:
         Args:
 
         Returns:
-            np.ndarray: A_inv. 
+            np.ndarray: A_inv.
         """
         A = np.zeros((16, 16))
-        
+
         # Helper for readability of array indices
         a = np.zeros((4, 4, 16))
         for i in range(4):
@@ -63,7 +63,7 @@ class AerodynamicLoad:
         A[2] = a[0, 0] + a[0, 1] + a[0, 2] + a[0, 3]
         # f(1, 1) = sum a_ij
         A[3] = np.ones(16)
-        
+
 
         # f_z(0, 0) = a_10
         A[4] = a[1, 0]
@@ -73,7 +73,7 @@ class AerodynamicLoad:
         A[6] = a[1, 0] + a[1, 1] + a[1, 2] + a[1, 3]
         # f_z(1, 1) = sum i * a_ij
         A[7] = np.array([0, 1, 2, 3] * 4)
-         
+
         # f_x(0, 0) = a_01
         A[8] = a[0, 1]
         # f_x(1, 0) = a_01 + a_11 + a_21 + a_31
@@ -110,7 +110,7 @@ class AerodynamicLoad:
         outer_self = self
 
         class Tile:
-            
+
             # z_i and x_i are also the index of the corner with smallest z and x, respectively
             def __init__(self, z_i: int, x_i: int):
                 self.z_i = z_i
@@ -157,7 +157,7 @@ class AerodynamicLoad:
                     fz  : A finite difference approximation of the partial derivative in z direction of that point.
                     fx  : A finite difference approximation of the partial derivative in x direction of that point.
                     fzx : A finite difference approximation of the partial derivative in x and z direction of that point.
-                """   
+                """
 
                 def f(z_i, x_i):
                     return outer_self.data[z_i, x_i]
@@ -184,8 +184,8 @@ class AerodynamicLoad:
                       ) / (delta_x * delta_z)
 
                 return f_, fz, fx, fzx
-            
-        
+
+
             def __populate_f_array__(self):
                 """Internal function to populate this tile's 'f' array.
 
@@ -193,10 +193,10 @@ class AerodynamicLoad:
                 can be used to calculate the coefficients necessary for interpolation.
 
                 Args:
-                    
+
                 Returns:
-                    
-                """ 
+
+                """
 
                 for index, (delta_z_i, delta_x_i) in enumerate([(0, 0), (1, 0), (0, 1), (1, 1)]):
                     f, fz, fx, fzx = self.__get_value_and_derivatives__(delta_z_i, delta_x_i)
@@ -204,8 +204,8 @@ class AerodynamicLoad:
                     self.f[index + 4 ] = fz * self.dz
                     self.f[index + 8 ] = fx * self.dx
                     self.f[index + 12] = fzx * self.dx * self.dz
-            
-            
+
+
             def get_relative_dir(self, z: float, x: float) -> int:
                 """This function returns the direction (in term of indices) of the tile, in which the point (z, x) can be found.
 
@@ -214,7 +214,7 @@ class AerodynamicLoad:
                     x (float): x-coordinate of the point
 
                 Returns:
-                    (z, x) Tuple[int, int]: The index direction in z and x. 
+                    (z, x) Tuple[int, int]: The index direction in z and x.
                 """
 
                 dz = 0
@@ -222,13 +222,13 @@ class AerodynamicLoad:
                     dz = 1
                 elif z < self.z0 and self.z_i != 0:
                     dz = -1
-                
+
                 dx = 0
                 if x > self.x1 and self.x_i != outer_self.n_x - 2:
                     dx = 1
                 elif x < self.x0 and self.x_i != 0:
                     dx = -1
-                
+
                 return dz, dx
 
 
@@ -251,13 +251,13 @@ class AerodynamicLoad:
                 for j in range(4):
                     for i in range(4):
                         result += self.a[i + j * 4] * z_bar**i * x_bar**j
-                
+
                 return result
-            
+
 
             def __repr__(self):
                 return "T{" + f"{self.z0, self.x0} -> {self.z1, self.x1}" + "}"
-                
+
         return Tile(tile_z_i, tile_x_i)
 
 
@@ -276,11 +276,11 @@ class AerodynamicLoad:
         id_z = (np.abs(self.grid_z_coordinates[:-1] - z)).argmin()
         id_x = (np.abs(self.grid_x_coordinates[:-1] - x)).argmin()
 
-        tile = self.tiles[id_z][id_x]        
+        tile = self.tiles[id_z][id_x]
 
         dz, dx = tile.get_relative_dir(z, x)
         tile = self.tiles[id_z + dz][id_x + dx]
-        
+
         return tile
 
 
@@ -296,9 +296,6 @@ class AerodynamicLoad:
         """
 
         tile = self.__find_grid_square__(z, x)
-        result = tile.get_value_at(z, x)
+        result = tile.get_value_at(z, x)*1000
 
         return result
-
-
-
