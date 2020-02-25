@@ -109,6 +109,7 @@ class AerodynamicLoad:
 
         return np.linalg.inv(A)
 
+
     def init_tile(self, tile_z_i: int, tile_x_i: int) -> 'Tile':
         """Initialises a new tile object, which then can be used to interpolate that part of the graph.
 
@@ -294,6 +295,7 @@ class AerodynamicLoad:
 
         return tile
 
+
     def __find_grid_squares__(self, z: Union[float, np.ndarray], x: Union[float, np.ndarray]) -> 'Tile':
         """Finds the tile that contains point with coordinates z, x.
 
@@ -325,7 +327,8 @@ class AerodynamicLoad:
         
         return tiles
 
-    def get_values_grid(self, z_coordinates: np.ndarray, x_coordinates: np.ndarray) -> np.ndarray:
+
+    def get_values_grid(self, z_coordinates: Union[float, np.ndarray], x_coordinates: Union[float, np.ndarray]) -> np.ndarray:
         """Finds the values of the aerodynamic load in the given (rectilinear) grid with the given z and x grid coordinates.
 
         Args:
@@ -333,12 +336,16 @@ class AerodynamicLoad:
             x (float or np.ndarray): x coordinate(s) of point of interest
 
         Returns:
-            float or np.ndarray: Aerodynamic load in N/m^2 at point(s) (z, x).
+            np.ndarray: Aerodynamic load in N/m^2 at point(s) (z, x).
         """
+        z_coordinates: np.ndarray = np.array(z_coordinates, ndmin=1)
+        x_coordinates: np.ndarray = np.array(x_coordinates, ndmin=1)
+
         Z, X = np.meshgrid(z_coordinates, x_coordinates, indexing='ij')
         return self.get_value_at(Z.flatten(), X.flatten()).reshape((z_coordinates.shape[0], x_coordinates.shape[0]))
 
-    def get_value_at(self, z: Union[float, np.ndarray], x: Union[np.ndarray, float]) -> Union[float, np.ndarray]:
+
+    def get_value_at(self, z: Union[float, np.ndarray], x: Union[np.ndarray, float]) -> np.ndarray:
         """Finds the value of the aerodynamic load at the given position (z, x).
 
         Args:
@@ -346,7 +353,7 @@ class AerodynamicLoad:
             x (float or np.ndarray): x coordinate(s) of point of interest
 
         Returns:
-            float or np.ndarray: Aerodynamic load in N/m^2 at point(s) (z, x).
+            np.ndarray: Aerodynamic load in N/m^2 at point(s) (z, x).
         """
 
         z: np.ndarray = np.array(z, ndmin=1)
