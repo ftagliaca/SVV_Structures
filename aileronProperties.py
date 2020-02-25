@@ -124,15 +124,16 @@ class Aileron():
         A_halfcircle = math.pi *r* self.t_sk
         A_skin = 2 * l_skin * self.t_sk          #for both two diagonal skins
         A_spar = self.t_sp * self.h
-        A_stif = self.w_st * self.t_st + self.h_st *self.t_st #for ONE stiffener
+        A_stif = (self.w_st + self.h_st)*self.t_st #for ONE stiffener
 
-
+        zCentroid = np.abs(self.zCentroid())
+        print(zCentroid)
         #I_yy calculations
         #Important to note that the dz's are chosen in accordance with points we
         #calculated the individual Moments of Inertia around
-        dz_skin = -((self.C_a-r)/2)#+r)
-        dz_spar = -r*0
-        dz_halfcircle = -r*0
+        dz_skin = -((self.C_a-r)/2+r)+zCentroid
+        dz_spar = -r+zCentroid
+        dz_halfcircle = -r+zCentroid
 
         dz_stif = (self.Q_stiff)/(self.n_st * A_stif)
 
@@ -147,7 +148,7 @@ class Aileron():
 
         #now we add the influence of the stringers on I_yy
         for i in range(self.n_st):
-            dz_st = self.st_pos[i,1]+r
+            dz_st = self.st_pos[i,1]+zCentroid
             dy_st = self.st_pos[i,0]
 
             I_yy += A_stif * dz_st**2
