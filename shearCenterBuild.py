@@ -60,21 +60,57 @@ def get_idealised_shear_flow(aircraft_class):
     :return:
     '''
     str_pos = aircraft_class.st_pos  # called st_pos in original class file
-    # print(str_pos)
+    # print('stringer positions :\n', str_pos)
     if str_pos.size == aircraft_class.n_st * 2:  # str_pos is a 17 x 2 numpy array
         # initialise output sum
         eps_z = 0
         eps_y = 0
         # a_stif =  aircraft_class.w_st * aircraft_class.t_st + aircraft_class.h_st * aircraft_class.t_st
         a_stiff = aircraft_class.A_stif
-        print(a_stiff)
+        # print(a_stiff)
         for iter in range(0, aircraft_class.n_st):
             eps_z += a_stiff * str_pos[iter][0]
             eps_y += a_stiff * str_pos[iter][1]
-
         return np.array([eps_z, eps_y])
     else:
         raise Exception("Something's wrong, I can feel it!")
+
+
+def get_idealised_shear_contribution(aircraft_class):
+    '''
+    Get the summed carried shear flows on the booms per wall. This is used in the subsequent base
+    shear flow calculation (get_shear_flow_base).
+    :param aircraft_class:
+    :return:
+    '''
+    # expressing the stringer position coordinates relative to centroid z-position
+    z_bar = aircraft_class.z_centroid
+    str_pos = aircraft_class.st_pos - np.hstack((np.zeros((17, 1)), z_bar * np.ones((17, 1))))
+    # print('stringer positions wrt centroid: \n',str_pos)
+
+    # creating a matrix of stringer areas for multiplication. Note that stringer on point 0,0 is halved since it's
+    # 'shared'(a cut is made on the y=0 section of that point)
+    a_stiff = aircraft_class.A_stif
+    a_stiff_mat = np.vstack((1 / 2 * np.ones((1, 2)), np.ones((16, 2)))) * a_stiff
+
+    # multiply the areas matrix with the stringer coordinates matrix before summation. array is A*[ycoord, zcoord]
+    ay_az_mat = np.multiply(str_pos, a_stiff_mat)
+    # print('stringer areas matrix:\n', ay_az_mat)  # turn on for debug
+
+    # sum up the individual A*y and A*z, and sort them into numpy arrays for individual walls. Note: i = cell 1,
+    # ii = cell 2. Remember that end points are n+1 for python indexing.
+    eps_iy = np.array([[np.sum(ay_az_mat[0:2, 0]), 0, ay_az_mat[16, 0] + ay_az_mat[0, 0]]])
+    eps_iz = np.array([[np.sum(ay_az_mat[0:2, 1]), 0, ay_az_mat[16, 1] + ay_az_mat[0, 1]]])
+    eps_izy = np.transpose(np.vstack((eps_iz, eps_iy)))
+    eps_iiy = np.array([[np.sum(ay_az_mat[slice(9, 16, 1), 0]), 0, np.sum(ay_az_mat[slice(2, 9, 1), 0])]])
+    eps_iiz = np.array([[np.sum(ay_az_mat[slice(9, 16, 1), 1]), 0, np.sum(ay_az_mat[slice(2, 9, 1), 1])]])
+    eps_iizy = np.transpose(np.vstack((eps_iiz, eps_iiy)))
+    # print('eps_iizy: \n', eps_iiy,eps_iiz,'\n',eps_iizy)
+    # print('eps_izy: \n', eps_iy, eps_iz, '\n', eps_izy)
+
+    # note that both the epsilon arrays have the z in first column and the y in 2nd column
+    # (inverted from the str_coords)
+    return eps_izy, eps_iizy
 
 
 def get_geometric_2ndary(aircraft_class):
@@ -94,7 +130,7 @@ def get_geometric_2ndary(aircraft_class):
     return
 
 
-def get_shear_flow_base(lambd_array, aircraft_class, eps_array):
+def get_shear_flow_base(lambd_array, aircraft_class):
     """
     Gets the first shear flow equation for the base shear flows in the semi-circular profile from Sherman's derived
     equation
@@ -104,26 +140,32 @@ def get_shear_flow_base(lambd_array, aircraft_class, eps_array):
     h_spar = aircraft_class.h  # height of aileron in y direction, also the length of the spar
     l_sk = aircraft_class.l_s  # length of straight skin section
     z_bar = aircraft_class.z_centroid  # z_coord of the centroid
-    print(z_bar)
-    print(eps_array)
-    z_tr = z_ii(aircraft_class)  # z length of the trailing edge section in cross-section(section II)
+    # z_bar = -0.21578
+    eps_izy, eps_iizy = get_idealised_shear_contribution(aircraft_class)
+    # print(z_bar)
+    # print(eps_array)
+    # print(h_spar)
+    z_tr = - z_ii(aircraft_class)  # z length of the trailing edge section in cross-section(section II)
     radius = h_spar / 2  # half the length of the spar
     t_spar = aircraft_class.t_sp  # thickness of spar
     t_skin = aircraft_class.t_sk  # thickness of skin
-    q_11 = lambd_array[0] * (t_skin * (radius * radius + radius * z_bar * m.pi / 2) + eps_array[0]) + lambd_array[1] * (
-            t_skin * radius * radius) + eps_array[1]
-    q_12 = lambd_array[0] * (eps_array[0]) + lambd_array[1] * (
-            t_spar * (radius - z_bar) * h_spar + eps_array[1]) + q_11
+    q_11 = lambd_array[0] * (t_skin * (radius * radius + radius * z_bar * m.pi / 2) + eps_izy[0, 0]) + lambd_array[
+        1] * ((t_skin * radius * radius) + eps_izy[0, 1])
+    q_12 = lambd_array[0] * (eps_izy[1, 0]) + lambd_array[1] * (
+            t_spar * (- radius - z_bar) * h_spar + eps_izy[1, 1]) + q_11
     # q_13 = q_11  # taking the assumption that symmetry = same shear flow
-    q_13 = lambd_array[0] * (t_skin * (radius * radius + radius * z_bar * m.pi / 2) + eps_array[0]) + lambd_array[1] *(
-        t_skin * radius * radius + eps_array[1]) + q_12
+    q_13 = lambd_array[0] * (t_skin * (radius * radius + radius * z_bar * m.pi / 2) + eps_izy[2, 0]) + lambd_array[
+        1] * (
+                   t_skin * radius * radius + eps_izy[2, 1]) + q_12
 
-    q_21 = lambd_array[0] * (t_skin * (z_tr * l_sk + (radius - z_bar)) + eps_array[0]) + lambd_array[1] * (
-            t_skin * - l_sk / 2 * radius + eps_array[1])
-    q_22 = lambd_array[0] * eps_array[0] + lambd_array[1] * (t_spar * (radius + z_bar) * radius + eps_array[1]) + q_21
-    q_23 = q_21  # due the symmetry
-    q_23 = lambd_array[0] * (t_skin * (l_sk / 2 * z_tr + l_sk * (radius - z_bar)) + eps_array[0]) + lambd_array[1] * (
-            t_skin * radius * l_sk / 2) + q_22
+    q_21 = lambd_array[0] * (t_skin * (z_tr * l_sk + (- radius - z_bar)) + eps_iizy[0, 0]) + lambd_array[1] * (
+            t_skin * - l_sk / 2 * radius + eps_iizy[0, 1])
+    q_22 = lambd_array[0] * eps_iizy[1, 0] + lambd_array[1] * (
+            t_spar * (radius + z_bar) * radius + eps_iizy[1, 1]) + q_21
+    # q_23 = q_21  # due the symmetry
+    q_23 = lambd_array[0] * (t_skin * (l_sk / 2 * z_tr + l_sk * (- radius - z_bar)) + eps_iizy[2, 0]) + lambd_array[
+        1] * (
+                   t_skin * radius * l_sk / 2 + eps_iizy[2, 1]) + q_22
 
     output_array = np.array([[q_11, q_12, q_13], [q_21, q_22, q_23]])
 
@@ -156,8 +198,8 @@ def get_shear_centre(aircraft_class):
     :return:
     '''
     lambdas = get_constants([0, 1], aircraft_class)
-    epses = get_idealised_shear_flow(aircraft_class)
-    qb_list = get_shear_flow_base(lambdas, aircraft_class, epses)
+    # epses = get_idealised_shear_flow(aircraft_class)
+    qb_list = get_shear_flow_base(lambdas, aircraft_class)
     print(qb_list)
     # since only the z coordinate of the shear centre is needed,
 
@@ -176,14 +218,14 @@ def get_shear_centre(aircraft_class):
         :return:
         '''
         # Calculate the terms in the matrix A and initialise matrix A
-        a_11 = (2 * m.pi * radius) * (qb_list[0, 0] + qb_list[0, 2]) / t_skin
+        a_11 = (1/2 * m.pi * radius) / t_skin + h_spar / t_spar
         a_12 = - h_spar / t_spar
         a_21 = a_12
         a_22 = l_sk / t_skin + h_spar / t_spar
         a_matrix = np.array([[a_11, a_12],
                              [a_21, a_22]])
         # Matrix B is a 2x1 matrix to be solved for
-        b_1 = -1 * ((qb_list[0, 0] + qb_list[0, 2]) / t_skin * (2 * m.pi * radius) +
+        b_1 = -1 * ((qb_list[0, 0] + qb_list[0, 2]) / t_skin * (1/2 * m.pi * radius) +
                     qb_list[0, 1] * h_spar / t_spar)
         b_2 = -1 * ((qb_list[1, 0] + qb_list[1, 2]) * l_sk / t_skin +
                     qb_list[1, 1] * h_spar / t_spar)
@@ -193,14 +235,15 @@ def get_shear_centre(aircraft_class):
         return np.linalg.solve(a_matrix, b_matrix)
 
     c_matrix = get_SC_twist()
+    print('c_matrix: ', c_matrix)
     d = get_shortest_normal(aircraft_class)
 
     A_i = aircraft_class.A1
     A_ii = aircraft_class.A2
     # solve for shear centre
-    eta = (qb_list[0, 0] + qb_list[0, 2]) * (2 * m.pi * radius * radius) + (
-            qb_list[1, 0] + qb_list[1, 2]) * l_sk * d + 2 * A_i * c_matrix[0] + A_ii * c_matrix[1] - radius
-    print('eta is: ',eta)
+    eta = - ((qb_list[0, 0] + qb_list[0, 2]) * (1 / 2 * m.pi * radius * radius) + (
+            qb_list[1, 0] + qb_list[1, 2]) * l_sk * d + 2 * A_i * c_matrix[0] + A_ii * c_matrix[1] - radius)
+    print('eta is: ', eta)
 
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
@@ -209,4 +252,6 @@ q = A320.crossArea()
 _ = A320.stringersPosition()
 _ = A320.zCentroid()
 _ = A320.momInertia()
+
 get_shear_centre(A320)
+# get_idealised_shear_contribution(A320)
