@@ -56,7 +56,7 @@ def solveInternal(alr, q):
                    [0,0,0,0,0,-1,0,-1,0,-1,-cos(alr.theta)],
                    [0,0,0,0,1,0,1,0,1,0,sin(alr.theta)],
                    [0,0,0,0,0,alr.x_1-alr.l_a,0,alr.x_2-alr.l_a,0,alr.x_3-alr.l_a,(alr.x_I-alr.l_a)*sin(alr.theta)],
-                   [0,0,0,0,alr.l_a-alr.x_1,0,alr.l_a-alr.x_2,0,alr.l_a-alr.x_3,0,(alr.l_a-alr.x_I)*cos(alr.theta)]])
+                   [0,0,0,0,alr.l_a-alr.x_1,0,alr.l_a-alr.x_2,0,alr.l_a-alr.x_3,0,(alr.l_a-alr.x_I)*cos(alr.theta)]], dtype='float')
 
     b = np.matrix([[-alr.d_1*sin(alr.theta)],
                    [0],
@@ -68,6 +68,6 @@ def solveInternal(alr, q):
                    [-alr.P*cos(alr.theta)],
                    [integrate2D(q,0,alr.x_I,-alr.C_a,0,10,10,p=1)+alr.P*sin(alr.theta)],
                    [alr.P*(alr.x_II-alr.l_a)*cos(alr.theta)],
-                   [integrate2D(q,0,alr.l_a,-alr.C_a,0,10,10,p=2)]])
+                   [integrate2D(q,0,alr.l_a,-alr.C_a,0,10,10,p=2)]], dtype='float')
 
     return np.linalg.solve(A,b)
