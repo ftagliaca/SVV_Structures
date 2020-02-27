@@ -32,7 +32,7 @@ def z_ii(aircraft_class):
     :param aircraft_class: This uses the given geometric values from the aileron
     :return: length of z_II.
     """
-    z_2 = aircraft_class.C_a - aircraft_class.h
+    z_2 = aircraft_class.C_a - aircraft_class.h / 2
     return z_2
 
 
@@ -113,23 +113,6 @@ def get_idealised_shear_contribution(aircraft_class):
     return eps_izy, eps_iizy
 
 
-def get_geometric_2ndary(aircraft_class):
-    '''
-    Gets the relevant derived aircraft geometry values for use in subsequent calculations.
-    :param aircraft_class:
-    :return:
-    '''
-    h_spar = aircraft_class.h  # height of aileron in y direction, also the length of the spar
-    l_sk = aircraft_class.l_s  # length of straight skin section
-    z_bar = aircraft_class.z_centroid  # z_coord of the centroid
-    z_tr = z_ii(aircraft_class)  # z length of the trailing edge section in cross-section(section II)
-    radius = h_spar / 2  # half the length of the spar
-    t_spar = aircraft_class.t_sp  # thickness of spar
-    t_skin = aircraft_class.t_sk  # thickness of skin
-
-    return
-
-
 def get_shear_flow_base(lambd_array, aircraft_class):
     """
     Gets the first shear flow equation for the base shear flows in the semi-circular profile from Sherman's derived
@@ -149,25 +132,24 @@ def get_shear_flow_base(lambd_array, aircraft_class):
     radius = h_spar / 2  # half the length of the spar
     t_spar = aircraft_class.t_sp  # thickness of spar
     t_skin = aircraft_class.t_sk  # thickness of skin
-    q_11 = lambd_array[0] * (t_skin * (radius * radius + radius * z_bar * m.pi / 2) + eps_izy[0, 0]) + lambd_array[
+    q_11 = lambd_array[0] * (t_skin * (- radius * radius + radius * z_bar * m.pi / 2) + eps_izy[0, 0]) + lambd_array[
         1] * ((t_skin * radius * radius) + eps_izy[0, 1])
     q_12 = lambd_array[0] * (eps_izy[1, 0]) + lambd_array[1] * (
             t_spar * (- radius - z_bar) * h_spar + eps_izy[1, 1]) + q_11
     # q_13 = q_11  # taking the assumption that symmetry = same shear flow
-    q_13 = lambd_array[0] * (t_skin * (radius * radius + radius * z_bar * m.pi / 2) + eps_izy[2, 0]) + lambd_array[
-        1] * (
-                   t_skin * radius * radius + eps_izy[2, 1]) + q_12
+    q_13 = lambd_array[0] * (t_skin * (- radius * radius + radius * z_bar * m.pi / 2) + eps_izy[2, 0]) + lambd_array[
+        1] * (t_skin * - radius * radius + eps_izy[2, 1]) + q_12
 
     q_21 = lambd_array[0] * (t_skin * (z_tr * l_sk + (- radius - z_bar)) + eps_iizy[0, 0]) + lambd_array[1] * (
             t_skin * - l_sk / 2 * radius + eps_iizy[0, 1])
     q_22 = lambd_array[0] * eps_iizy[1, 0] + lambd_array[1] * (
             t_spar * (radius + z_bar) * radius + eps_iizy[1, 1]) + q_21
-    # q_23 = q_21  # due the symmetry
+    q_23 = q_21  # due the symmetry
     q_23 = lambd_array[0] * (t_skin * (l_sk / 2 * z_tr + l_sk * (- radius - z_bar)) + eps_iizy[2, 0]) + lambd_array[
-        1] * (
-                   t_skin * radius * l_sk / 2 + eps_iizy[2, 1]) + q_22
+        1] * (t_skin * radius * l_sk / 2 + eps_iizy[2, 1]) + q_22
 
     output_array = np.array([[q_11, q_12, q_13], [q_21, q_22, q_23]])
+    # print('output array: \n ', output_array)
 
     return output_array
 
@@ -191,19 +173,23 @@ def get_shortest_normal(aircraft_class):
     return z_tr * m.sin(theta)
 
 
-def get_shear_centre(aircraft_class):
+def get_shear_center(aircraft_class):
     '''
-    Solves for shear centre.
+    Solves for shear centre, eta. It's measured from the leading edge of the aileron cross-section.
     :param aircraft_class:
+    :param szys: list of [Sz, Sy]. Remember to set sc_calc to False if you want flows
+    :param sc_calc: Boolean whether to calculate shear center. Default is True.
     :return:
     '''
+    # Since aileron is symmetric on the z axis, only a shear of S_y = 1 is applied.
+
     lambdas = get_constants([0, 1], aircraft_class)
     # epses = get_idealised_shear_flow(aircraft_class)
     qb_list = get_shear_flow_base(lambdas, aircraft_class)
-    print(qb_list)
+    # print(qb_list)
     # since only the z coordinate of the shear centre is needed,
 
-    # anotherinstance of quality of life variable naming at a cost of absolute dumbness...
+    # another instance of quality of life variable naming at a cost of absolute dumbness...
     h_spar = aircraft_class.h  # height of aileron in y direction, also the length of the spar
     l_sk = aircraft_class.l_s  # length of straight skin section
     z_bar = aircraft_class.z_centroid  # z_coord of the centroid
@@ -212,20 +198,20 @@ def get_shear_centre(aircraft_class):
     t_spar = aircraft_class.t_sp  # thickness of spar
     t_skin = aircraft_class.t_sk  # thickness of skin
 
-    def get_SC_twist():
+    def get_sc_twist():
         '''
 
         :return:
         '''
         # Calculate the terms in the matrix A and initialise matrix A
-        a_11 = (1/2 * m.pi * radius) / t_skin + h_spar / t_spar
+        a_11 = (1 / 2 * m.pi * radius) / t_skin + h_spar / t_spar
         a_12 = - h_spar / t_spar
         a_21 = a_12
         a_22 = l_sk / t_skin + h_spar / t_spar
         a_matrix = np.array([[a_11, a_12],
                              [a_21, a_22]])
         # Matrix B is a 2x1 matrix to be solved for
-        b_1 = -1 * ((qb_list[0, 0] + qb_list[0, 2]) / t_skin * (1/2 * m.pi * radius) +
+        b_1 = -1 * ((qb_list[0, 0] + qb_list[0, 2]) / t_skin * (1 / 2 * m.pi * radius) +
                     qb_list[0, 1] * h_spar / t_spar)
         b_2 = -1 * ((qb_list[1, 0] + qb_list[1, 2]) * l_sk / t_skin +
                     qb_list[1, 1] * h_spar / t_spar)
@@ -234,7 +220,7 @@ def get_shear_centre(aircraft_class):
         # Matrix c is a 2x1 matrix containing the base shear flows
         return np.linalg.solve(a_matrix, b_matrix)
 
-    c_matrix = get_SC_twist()
+    c_matrix = get_sc_twist()
     print('c_matrix: ', c_matrix)
     d = get_shortest_normal(aircraft_class)
 
@@ -242,8 +228,76 @@ def get_shear_centre(aircraft_class):
     A_ii = aircraft_class.A2
     # solve for shear centre
     eta = - ((qb_list[0, 0] + qb_list[0, 2]) * (1 / 2 * m.pi * radius * radius) + (
-            qb_list[1, 0] + qb_list[1, 2]) * l_sk * d + 2 * A_i * c_matrix[0] + A_ii * c_matrix[1] - radius)
+            qb_list[1, 0] + qb_list[1, 2]) * l_sk * d + 2 * A_i * c_matrix[0] + A_ii * c_matrix[1])
     print('eta is: ', eta)
+
+    # Output eta as a distance from the leading edge of the aileron
+    return eta
+
+
+def get_shear_distr(aircraft_class, szy_magnit, szy_applied):
+    '''
+    Gets the shear distribution from a given shear load (and point of application) and spits out the
+    redundant shear flow
+    :param aircraft_class: type of aircraft.
+    :param szy_magnit: magnitude of shear load, [Sz, Sy] format.
+    :param szy_applied: line of application of shear load, [z_coord,y_coord] from leading edge.
+                        Uses the stated coordinate system. Units in metres.
+    :return: redundant shear flows in cells I and II, [q_0,I, q_0,II]
+    '''
+    lambds = get_constants(szy_magnit, aircraft_class)
+    q_base = get_shear_flow_base(lambds, aircraft_class)
+
+    # another instance of quality of life variable naming at a cost of absolute dumbness...
+    h_spar = aircraft_class.h  # height of aileron in y direction, also the length of the spar
+    l_sk = aircraft_class.l_s  # length of straight skin section
+    z_bar = aircraft_class.z_centroid  # z_coord of the centroid
+    z_tr = z_ii(aircraft_class)  # z length of the trailing edge section in cross-section(section II)
+    radius = h_spar / 2  # half the length of the spar
+    t_spar = aircraft_class.t_sp  # thickness of spar
+    t_skin = aircraft_class.t_sk  # thickness of skin
+
+    d = get_shortest_normal(aircraft_class)
+
+    # preparing terms from moment equation.
+    mom_known = (q_base[0, 0] + q_base[0, 2]) * (1 / 2 * m.pi * radius * radius) + (
+            q_base[1, 0] + q_base[1, 2]) * l_sk * d  # contribution of base shears
+    mom_unknown_i = 2 * aircraft_class.A1  # unknown redundant shear cell I to be solved
+    mom_unknown_ii = 2 * aircraft_class.A2  # unknown redundant shear cell II to be solved
+    mom_rhs_y = szy_magnit[1] * (
+            szy_applied[0] - z_bar)  # positive Sy and positive z distance from SC gives positive moment
+    mom_rhs_z = -szy_magnit[0] * (szy_applied[1])  # negative Sz and positive y distance gives positive moment
+    mom_rhs = mom_rhs_y + mom_rhs_z - mom_known
+
+    # preparing terms from twist compatibility equations
+    twist_11 = (1 / 2 * m.pi * radius) / t_skin + h_spar / t_spar
+    twist_12 = - h_spar / t_spar
+    twist_21 = twist_12
+    twist_22 = l_sk / t_skin + h_spar / t_spar
+
+    twist_rhs_1 = -1 * ((q_base[0, 0] + q_base[0, 2]) / t_skin * (1 / 2 * m.pi * radius) +
+                        q_base[0, 1] * h_spar / t_spar)
+    twist_rhs_2 = -1 * ((q_base[1, 0] + q_base[1, 2]) * l_sk / t_skin +
+                        q_base[1, 1] * h_spar / t_spar)
+
+    # combine all into large 3x3 matrix and solve using the power of linear algebra
+    big_chungus_r1 = np.array([mom_unknown_i, mom_unknown_ii, 0])
+    big_chungus_r2 = np.array([twist_11, twist_12, 1])
+    big_chungus_r3 = np.array([twist_21, twist_22, 1])
+    big_chungus_lhs = np.vstack((big_chungus_r1, big_chungus_r2, big_chungus_r3))
+    big_chungus_rhs = np.array([[mom_rhs], [twist_rhs_1], [twist_rhs_2]])
+    q0s = np.linalg.solve(big_chungus_lhs, big_chungus_rhs)
+    print(q_base)
+    print(np.hstack((q0s[0,0] * np.ones((2,1)), q0s[1,0] * np.ones((2,1)))))
+    q_tot = q_base + np.vstack((q0s[0,0] * np.ones((1,3)), q0s[1,0] * np.ones((1,3))))
+    print(q_tot)
+    q0s = np.transpose(q0s)
+    print(q0s)
+    # output formats:
+    # q0s gives a 1x3 matrix, with q0I, q0II and d/dz theta
+    # q_base gives a 2x3 matrix with the q_base on each wall, row is cell, column is wall
+    # q_tot gives a 2x3 matrix with q_tot = q_base + q0,cell, row is cell, column is wall
+    return q0s, q_base, q_tot
 
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
@@ -253,5 +307,6 @@ _ = A320.stringersPosition()
 _ = A320.zCentroid()
 _ = A320.momInertia()
 
-get_shear_centre(A320)
+get_shear_center(A320)
+get_shear_distr(A320, [0,1], [0,0])
 # get_idealised_shear_contribution(A320)
