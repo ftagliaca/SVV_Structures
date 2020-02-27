@@ -42,7 +42,7 @@ ax = plt.axes(projection='3d')
 
 
 
-def Validation_plot(LC, value):
+def Validation_plot(LC, value): #LC = loading case, value is type of stress to show
     index = LC[:,0].astype(int)-1
 
     if max(index > 6587):
