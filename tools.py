@@ -5,13 +5,15 @@ def macaulay(x,x1):
 
 def integrate1(f, a, b, n = 100, p = 1):
     X = np.linspace(a, b, num = n)
-    print(X)
     h = (b-a)/(n-1)
     if p == 1:
-        result = (np.sum(f(X))-0.5*f(a)-0.5*f(b))*h
+        result = np.sum(f(X))
+        result -= f(a)
+        result -= f(b)
+        result *= h
     else:
         result = 0
-        for i, x in enumerate(X):
+        for i, _ in enumerate(X):
             if i != 0:
                 result += (integrate1(f, 0, X[i], n = n, p = p-1)+integrate1(f, 0, X[i-1], n = n, p = p-1))*h/2
 
@@ -35,6 +37,6 @@ def integrate2D(f, a, b, c, d, nx, ny, p = 1):
     #http://hplgit.github.io/prog4comp/doc/pub/p4c-sphinx-Python/._pylight004.html#reusing-code-for-one-dimensional-integrals
     print("Integrating, please wait...")
     def g(x):
-        return integrate(lambda y: f(x, y), c, d, n = ny)
+        return integrate1(lambda y: f(x, y), c, d, n = ny)
 
-    return integrate(g, a, b, n = nx, p = p)
+    return integrate1(g, a, b, n = nx, p = p)

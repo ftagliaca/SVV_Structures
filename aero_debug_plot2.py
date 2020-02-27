@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from aero_loads import AerodynamicLoad
 from aileronProperties import A320
+import time
 
 np.set_printoptions(linewidth=None)
 
@@ -17,27 +18,31 @@ ax.set_zlabel("y")
 # Overwriting the grid functions because of simpler grid
 
 aero_load = AerodynamicLoad(A320, 'aerodynamicloada320.dat')
+
+z_sizes = -aero_load.grid_z_coordinates[:-1] + aero_load.grid_z_coordinates[1:]
+x_sizes = -aero_load.grid_x_coordinates[:-1] + aero_load.grid_x_coordinates[1:]
+print(f"Tile sizes in z-dir avg: {np.average(z_sizes)}, min: {z_sizes.min()}, max: {z_sizes.max()}")
+print(f"Tile sizes in x-dir avg: {np.average(x_sizes)}, min: {x_sizes.min()}, max: {x_sizes.max()}")
+
 n_z, n_x = aero_load.n_z, aero_load.n_x
 print(n_z, n_x)
 
 
-z = np.linspace(aero_load.grid_z_coordinates[0], aero_load.grid_z_coordinates[-1], 30)
-x = np.linspace(aero_load.grid_x_coordinates[0], aero_load.grid_x_coordinates[-1], 30)
+z = np.linspace(aero_load.grid_z_coordinates[0], aero_load.grid_z_coordinates[-1], 60)
+x = np.linspace(aero_load.grid_x_coordinates[0], aero_load.grid_x_coordinates[-1], 60)
 
-data = np.zeros((z.shape[0], x.shape[0]))
 
-for i, z_i in enumerate(z):
-    for j, x_j in enumerate(x):
-        data[i, j] = aero_load.get_value_at(z_i, x_j)
 
-print(data)
+start_time = time.time()
+data = aero_load.get_values_grid(z, x)
+print(f"Time taken: {time.time() - start_time}")
 
 Z, X = np.meshgrid(z, x, indexing='ij')
 ax.plot_wireframe(Z, X, data, color='green')
 
 
 # plotting
-data = np.genfromtxt('aerodynamicloada320.dat', delimiter=',')
+data = np.genfromtxt('aerodynamicloada320.dat', delimiter=',') * 1e3
 print("data:", data.shape)
 n_z, n_x = data.shape
 
