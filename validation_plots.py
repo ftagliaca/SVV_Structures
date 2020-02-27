@@ -56,7 +56,7 @@ def Validation_plot(LC, value): #LC = loading case, value is type of stress to s
             r = abs(LC[i,value]/max(LC[:,value]))
             g = 1-r
             c = [r,g,0.5]
-            ax.plot_trisurf(X, Y, Z,',',color=c)
+            ax.plot_trisurf(X, Y, Z,color=c)
             i += 1
         plt.show()
         
