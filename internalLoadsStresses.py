@@ -70,7 +70,7 @@ def w(x, aileron = A320):
 
 def S_y(x, aileron = A320):
     S_y_tot  = -cF[6]*macaulay(x,aileron.x_1)**0
-    S_y_tot += -cF[11]*cos(theta)*macaulay(x,aileron.x_I)**0
+    S_y_tot += -cF[11]*cos(aileron.theta)*macaulay(x,aileron.x_I)**0
     S_y_tot += -cF[8]*macaulay(x,aileron.x_2)**0
     S_y_tot += -cF[10]*macaulay(x,aileron.x_3)**0
     S_y_tot += aileron.P*cos(aileron.theta)*macaulay(x,aileron.x_II)**0
@@ -82,7 +82,7 @@ def S_z(x, aileron = A320):
     S_z_tot += cF[11]*sin(aileron.theta)*macaulay(x,aileron.x_I)**0
     S_z_tot += cF[7]*macaulay(x, aileron.x_2)**0
     S_z_tot += cF[9]*macaulay(x, aileron.x_3)**0
-    S_z_tot += -aileron.P*sin(theta)*macaulay(x, aileron.x_II)**0
+    S_z_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)**0
     S_z_tot += -integrate2D(q, -aileron.C_a, 0, 0, x, 10, 10, p=1)
 
     return S_z_tot
