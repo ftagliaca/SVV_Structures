@@ -30,6 +30,10 @@ class Aileron():
         self.E = 73.1e9
         self.G = 28e9
 
+        self.stringersPosition()
+        self.zCentroid()
+        self.momInertia()
+
     def stringersPosition(self):
         '''
         Inputs:
@@ -41,6 +45,7 @@ class Aileron():
                  1st column is y-coordinate, 2nd column is z-coordinate
         '''
         r = 0.5*self.h #radius of the circular section
+        self.r = r
         self.l_s = math.sqrt((self.C_a-r)**2 + r**2) #length of the straight skin section
 
         perimeter = math.pi*r + 2*self.l_s #perimeter of the aileron
