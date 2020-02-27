@@ -10,7 +10,7 @@ aeroLoad = AerodynamicLoad(A320, "aerodynamicloada320.dat")
 q = aeroLoad.get_values_grid
 
 try:
-    cF = np.genfromtxt("reactionForces1.dat", delimiter=",", comments = "#")
+    cF = np.genfromtxt("reactionForces.dat", delimiter=",", comments = "#")
 except OSError as e:
     cF = solveInternal(A320, q)
 
@@ -69,20 +69,63 @@ def w(x, aileron = A320):
     return W
 
 def S_y(x, aileron = A320):
-    S_y_tot  = -cF[6]*macaulay(x,aileron.x_1)**0
-    S_y_tot += -cF[11]*cos(aileron.theta)*macaulay(x,aileron.x_I)**0
-    S_y_tot += -cF[8]*macaulay(x,aileron.x_2)**0
-    S_y_tot += -cF[10]*macaulay(x,aileron.x_3)**0
-    S_y_tot += aileron.P*cos(aileron.theta)*macaulay(x,aileron.x_II)**0
+    S_y_tot  = -cF[6]*macaulay(x,aileron.x_1)**0 if macaulay(x,aileron.x_1)>0 else 0
+    S_y_tot += -cF[11]*cos(aileron.theta)*macaulay(x,aileron.x_I)**0 if macaulay(x,aileron.x_I)>0 else 0
+    S_y_tot += -cF[8]*macaulay(x,aileron.x_2)**0 if macaulay(x,aileron.x_2)>0 else 0
+    S_y_tot += -cF[10]*macaulay(x,aileron.x_3)**0 if macaulay(x,aileron.x_3)>0 else 0
+    S_y_tot += aileron.P*cos(aileron.theta)*macaulay(x,aileron.x_II)**0 if macaulay(x,aileron.x_II)>0 else 0
 
     return S_y_tot
 
 def S_z(x, aileron = A320):
-    S_z_tot  = cF[5]*macaulay(x,aileron.x_1)**0
-    S_z_tot += cF[11]*sin(aileron.theta)*macaulay(x,aileron.x_I)**0
-    S_z_tot += cF[7]*macaulay(x, aileron.x_2)**0
-    S_z_tot += cF[9]*macaulay(x, aileron.x_3)**0
-    S_z_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)**0
+    S_z_tot  = cF[5]*macaulay(x,aileron.x_1)**0 if macaulay(x,aileron.x_1)>0 else 0
+    S_z_tot += cF[11]*sin(aileron.theta)*macaulay(x,aileron.x_I)**0 if macaulay(x,aileron.x_I)>0 else 0
+    S_z_tot += cF[7]*macaulay(x, aileron.x_2)**0 if macaulay(x,aileron.x_2)>0 else 0
+    S_z_tot += cF[9]*macaulay(x, aileron.x_3)**0 if macaulay(x,aileron.x_3)>0 else 0
+    S_z_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)**0 if macaulay(x,aileron.x_II)>0 else 0
     S_z_tot += -integrate2D(q, -aileron.C_a, 0, 0, x, 10, 10, p=1)
 
     return S_z_tot
+
+def phi(x, aileron = A320):
+    z_hat = -0.215
+    T = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
+
+    phi_tot  = cF[11]*macaulay(x, aileron.x_I)*T
+    phi_tot += -aileron.P*macaulay(x, x_II)*T
+    phi_tot += -integrate2D(q, aileron.C_a, 0, 0, x, 10, 10, p=2)
+    phi_tot *= (1/aileron.G*aileron.J)
+    phi_tot += cF[4]
+
+    return phi_tot
+
+def M_y(x, aileron = A320):
+    M_y_tot  = -cF[6]*macaulay(x, aileron.x_1)
+    M_y_tot += -cF[11]*cos(aileron.theta)*macaulay(x, aileron.x_I)
+    M_y_tot += -cF[8]*macaulay(x, aileron.x_2)
+    M_y_tot += -cF[10]*macaulay(x, aileron.x_3)
+    M_y_tot += aileron.P*cos(aileron.theta)*macaulay(x, aileron.x_II)
+
+    return M_y_tot
+
+def M_z(x, aileron = A320):
+    M_z_tot  = cF[5]*macaulay(x, aileron.x_1)
+    M_z_tot += cF[11]*sin(aileron.theta)*macaulay(x, aileron.x_I)
+    M_z_tot += cF[7]*macaulay(x, aileron.x_2)
+    M_z_tot += cF[9]*macaulay(x, aileron.x_3)
+    M_z_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)
+    M_z_tot += -integrate2D(q, aileron.C_a, 0, 0, x, 0, 0, p=2)
+
+    return M_y_tot
+
+def T(x, aileron = A320):
+    def dtau(z, x):
+        return q(z,x)*(z-z_hat)
+
+    z_hat = -0.215
+    T_c = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
+    T_tot  = cF[11]*T_c*macaulay(x, aileron.x_I)**0
+    T_tot += -aileron.P*T_c*macaulay(x, aileron.x_II)**0
+    T_tot += -integrate2D(dtau, aileron.C_a, 0, 0, x, 10, 10, p=1)
+
+    return T_tot

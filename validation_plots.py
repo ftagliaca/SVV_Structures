@@ -15,8 +15,8 @@ from validation_input import *
 ##    7. Bending_B737_1 (nodes)
 ##    8. Bending_assembly (nodes)
 ##    9. Jam_bent_B737_1 (nodes)
-##    10. Jam_bent_assembly (nodes)
-##    11. Jam_str_B737_1 (nodes)
+##    10. Jam_bent_assembly (nodes)*
+##    11. Jam_str_B737_1 (nodes)*
 ##    12. Jam_str_assembly (nodes)
 ##    13. Bending_RF_B737 (nodes)
 ##    14. Bending_RF_assembly (nodes)
@@ -40,40 +40,38 @@ from validation_input import *
 
 ax = plt.axes(projection='3d')
 
-LC = Bending_B737_1 # Loading Case
-value = 3 # index of column
-
-index = LC[:,0].astype(int)-1
-i = int(min(index))
-
-##for s in surface_data[index,:]-1:
-##    surface = array([geom_data[s[1],1:4],geom_data[s[2],1:4],geom_data[s[3],1:4],geom_data[s[4],1:4]])
-##    X = surface[:,0]
-##    Y = surface[:,1]
-##    Z = surface[:,2]
-##    r = abs(LC[i,value]/max(LC[:,value]))
-##    g = 1-r
-##    c = [r,g,0.5]
-##    ax.plot_trisurf(X, Y, Z,color=c)
-##    i += 1
 
 
-X = array([])
-Y = array([])
-Z = array([])
-COLOR = array([])
+def Validation_plot(LC, value): #LC = loading case, value is type of stress to show
+    index = LC[:,0].astype(int)-1
 
-for d in geom_data[index,:]:
-    X = append(X,d[1])
-    Y = append(Y,d[2])
-    Z = append(Z,d[3])
-    r = abs(LC[i,value]/max(LC[:,value]))
-    g = 1-r
-    c = [r,g,0.5]
-    COLOR = append(COLOR,c,axis=1)
-    i += 1
+    if max(index > 6587):
+        i = min(index)
 
-ax.plot3D(X,Y,Z,'.',color=COLOR)
+        for s in surface_data[index,:]-1:
+            surface = array([geom_data[s[1],1:4],geom_data[s[2],1:4],geom_data[s[3],1:4],geom_data[s[4],1:4]])
+            X = surface[:,0]
+            Y = surface[:,1]
+            Z = surface[:,2]
+            r = abs(LC[i,value]/max(LC[:,value]))
+            g = 1-r
+            c = [r,g,0.5]
+            ax.plot_trisurf(X, Y, Z,',',color=c)
+            i += 1
+        plt.show()
+        
+    else:
+        
+        r = abs(LC[:,value]/(max(LC[:,value])+0.1))
+        g = 1-r
+        color = array([r,g,0.5*ones(len(r))]).T
+        print(color)
+        print(shape(color))
+        X = geom_data[index,1]
+        Y = geom_data[index,2]
+        Z = geom_data[index,3]
+        print(shape(X))
+        ax.scatter(X,Y,Z,',',c=color)
 
-plt.show()
+        plt.show()
 
