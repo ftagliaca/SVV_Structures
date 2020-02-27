@@ -84,3 +84,5 @@ def S_z(x, aileron = A320):
     S_z_tot += cF[9]*macaulay(x, aileron.x_3)**0
     S_z_tot += -aileron.P*sin(theta)*macaulay(x, aileron.x_II)**0
     S_z_tot += -integrate2D(q, -aileron.C_a, 0, 0, x, 10, 10, p=1)
+
+    return S_z_tot
