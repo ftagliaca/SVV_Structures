@@ -1,8 +1,20 @@
 from math import sqrt, cos, sin, tan
 import numpy as np
-from tools import macaulay, integrate2D
+from tools import macaulay, integrate2D, solveInternal
+from aileronProperties import Aileron
+from aero_loads import AerodynamicLoad
 
-def normalStress(y, z, Aileron, M_z, M_x):
+A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
+
+aeroLoad = AerodynamicLoad(A320, "aerodynamicloada320.dat")
+q = aeroLoad.get_values_grid
+
+try:
+    cF = np.genfromtxt("reactionForces1.dat", delimiter=",", comments = "#")
+except OSError as e:
+    cF = solveInternal(A320, q)
+
+def normalStress(y, z, Aileron, M_z, M_y):
     '''
     Input:
 
@@ -14,10 +26,10 @@ def normalStress(y, z, Aileron, M_z, M_x):
 
     Output:
 
-    sigma_z = normal stress along z axis, in Pa
+    sigma_x = normal stress along x axis, in Pa
     '''
-    sigma_z = (M_z*Aileron.Iyy*y + M_x*Aileron.Izz*z)/(Aileron.Izz*Aileron.Iyy)
-    return sigma_z
+    sigma_x = (M_z*Aileron.Iyy*y + M_y*Aileron.Izz*(z-Aileron.zCentroid))/(Aileron.Izz*Aileron.Iyy)
+    return sigma_x
 
 def vonMises(sigma, tau):
     '''
@@ -33,41 +45,44 @@ def vonMises(sigma, tau):
     sigma_vm = sqrt(((sigma[0]-sigma[1])**2 + (sigma[1]-sigma[2])**2 + (sigma[0]-sigma[2])**2)/2+3*(tau[0]**2+tau[1]**2+tau[2]**2))
     return sigma_vm
 
-def solveInternal(alr, q):
-    '''
-    Input:
+def v(x, aileron = A320):
+    v  = cF[5]/6*macaulay(x,aileron.x_1)**3
+    v += cF[11]/6*macaulay(x,aileron.x_I)**3*sin(aileron.theta)
+    v += cF[7]/6*macaulay(x,aileron.x_2)**3
+    v += -aileron.P/6*macaulay(x,aileron.x_II)**3*sin(aileron.theta)
+    v += cF[9-1]/6*macaulay(x,aileron.x_3)**3
+    v += -integrate2D(q, aileron.C_a, 0, 0, x, 10, 10, p=4)
+    v *= -1/(aileron.E*aileron.Izz)
+    v += cF[0]*x+cF[1]
 
-    alr = aileron class, containing all the geometrical properties
-    q = distributed load q (function)
+    return v
 
-    Output:
+def w(x, aileron = A320):
+    W  = -cF[6]/6*macaulay(x,aileron.x_1)**3
+    W += -cF[11]/6*macaulay(x,aileron.x_I)**3*cos(aileron.theta)
+    W += -cF[8]/6*macaulay(x,aileron.x_2)**3
+    W += aileron.P/6*macaulay(x,aileron.x_II)**3*cos(aileron.theta)
+    W += -cF[10]/6*macaulay(x,aileron.x_3)**3
+    W *= -1/(aileron.E*aileron.Iyy)
+    W += cF[2]*x+cF[3]
 
-    X = numpy matrix of size (11,1) containing all the unknown as follows
-        C1, C2, C3, C4, F_1y, F_1z, F_2y, F_2z, F_3y, F_3z, P_I
-    '''
+    return W
 
-    A = np.matrix([[0,0,alr.x_1,1,0,0,0,0,0,0,0],
-                   [0,0,alr.x_2,1,0,((alr.x_2-alr.x_1)**3)/(6*alr.E*alr.Iyy),0,0,0,0,cos(alr.theta)*((alr.x_2-alr.x_1)**3)/(6*alr.E*alr.Iyy)],
-                   [0,0,alr.x_3,1,0,((alr.x_3-alr.x_1)**3)/(6*alr.E*alr.Iyy),0,((alr.x_3-alr.x_2)**3)/(6*alr.E*alr.Iyy),0,0,cos(alr.theta)*((alr.x_3-alr.x_1)**3)/(6*alr.E*alr.Iyy)],
-                   [-alr.x_I,-1,alr.x_I/tan(alr.theta),1/tan(alr.theta),((alr.x_I-alr.x_1)**3)/(6*alr.E*alr.Izz),-((alr.x_I-alr.x_1)**3)/(6*alr.E*alr.Iyy*tan(alr.theta)),0,0,0,0,0],
-                   [alr.x_2,1,0,0,-((alr.x_2-alr.x_1)**3)/(6*alr.E*alr.Izz),0,0,0,0,0,-((alr.x_2-alr.x_I)**3)/(6*alr.E*alr.Izz)*sin(alr.theta)],
-                   [alr.x_1,1,0,0,0,0,0,0,0,0,0],
-                   [alr.x_3,1,0,0,-((alr.x_3-alr.x_1)**3)/(6*alr.E*alr.Izz),0,-((alr.x_3-alr.x_2)**3)/(6*alr.E*alr.Izz),0,0,0,-((alr.x_3-alr.x_I)**3)*sin(alr.theta)/(6*alr.E*alr.Izz)],
-                   [0,0,0,0,0,-1,0,-1,0,-1,-cos(alr.theta)],
-                   [0,0,0,0,1,0,1,0,1,0,sin(alr.theta)],
-                   [0,0,0,0,0,alr.x_1-alr.l_a,0,alr.x_2-alr.l_a,0,alr.x_3-alr.l_a,(alr.x_I-alr.l_a)*sin(alr.theta)],
-                   [0,0,0,0,alr.l_a-alr.x_1,0,alr.l_a-alr.x_2,0,alr.l_a-alr.x_3,0,(alr.l_a-alr.x_I)*cos(alr.theta)]], dtype='float')
+def S_y(x, aileron = A320):
+    S_y_tot  = -cF[6]*macaulay(x,aileron.x_1)**0
+    S_y_tot += -cF[11]*cos(theta)*macaulay(x,aileron.x_I)**0
+    S_y_tot += -cF[8]*macaulay(x,aileron.x_2)**0
+    S_y_tot += -cF[10]*macaulay(x,aileron.x_3)**0
+    S_y_tot += aileron.P*cos(aileron.theta)*macaulay(x,aileron.x_II)**0
 
-    b = np.matrix([[-alr.d_1*sin(alr.theta)],
-                   [0],
-                   [-alr.d_3*sin(alr.theta)+alr.P*cos(alr.theta)*((alr.x_3-alr.x_II)**3)/(2*alr.E*alr.Iyy)],
-                   [integrate2D(q,0,alr.x_I,-alr.C_a,0,10,10,p=4)/(alr.E*alr.Izz)],
-                   [-integrate2D(q,0,alr.x_2,-alr.C_a,0,10,10,p=4)/(alr.E*alr.Izz)],
-                   [alr.d_1*cos(alr.theta)-integrate2D(q,0,alr.x_1,-alr.C_a,0,10,10,p=4)/(alr.E*alr.Izz)],
-                   [alr.d_3*cos(alr.theta)-integrate2D(q,0,alr.x_3,-alr.C_a,0,10,10,p=4)/(alr.E*alr.Izz)-alr.P*sin(alr.theta)*((alr.x_3-alr.x_II)**3)/(2*alr.E*alr.Izz)],
-                   [-alr.P*cos(alr.theta)],
-                   [integrate2D(q,0,alr.x_I,-alr.C_a,0,10,10,p=1)+alr.P*sin(alr.theta)],
-                   [alr.P*(alr.x_II-alr.l_a)*cos(alr.theta)],
-                   [integrate2D(q,0,alr.l_a,-alr.C_a,0,10,10,p=2)]], dtype='float')
+    return S_y_tot
 
-    return np.linalg.solve(A,b)
+def S_z(x, aileron = A320):
+    S_z_tot  = cF[5]*macaulay(x,aileron.x_1)**0
+    S_z_tot += cF[11]*sin(aileron.theta)*macaulay(x,aileron.x_I)**0
+    S_z_tot += cF[7]*macaulay(x, aileron.x_2)**0
+    S_z_tot += cF[9]*macaulay(x, aileron.x_3)**0
+    S_z_tot += -aileron.P*sin(theta)*macaulay(x, aileron.x_II)**0
+    S_z_tot += -integrate2D(q, -aileron.C_a, 0, 0, x, 10, 10, p=1)
+
+    return S_z_tot
