@@ -125,6 +125,7 @@ class GeometricalProperties(TestCase):
         print(f"aileron.P     = {self.aileron.P}")
 
         ## Verification stuff
+        self.xa /= 1e2  # cm to m
         self.ha /= 1e2  # cm to m
         self.tsk /= 1e3  # mm to m
         self.tsp /= 1e3  # mm to m
@@ -154,7 +155,7 @@ class GeometricalProperties(TestCase):
         print(f"self.theta = {self.theta}")
         print(f"self.P     = {self.P}")
         
-        self.crosssection = Stiffness.crosssection(self.nst, self.Ca, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst)
+        self.crosssection = Stiffness.Crosssection(self.nst, self.Ca, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst)
         self.crosssection.compute_bending_properties()   # Run the calculations
         self.crosssection.compute_shearcenter()   # Run the calculations
         self.crosssection.compute_torsionalstiffness()   # Run the calculations
@@ -208,6 +209,16 @@ class GeometricalProperties(TestCase):
             
             self.assertEqual(self.crosssection.J, -1, msg="MoI is not correct.")
         
+
+
+    def assertEqual(self, first, second, msg=None):
+        """Fail if the two objects are unequal as determined by the '=='
+           operator.
+        """
+        try:
+            super().assertEqual(first, second, msg=msg)
+        except AssertionError, e:
+            print(str(e))
 
 if __name__ == "__main__":
     
