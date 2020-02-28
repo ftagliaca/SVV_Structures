@@ -217,7 +217,7 @@ class GeometricalProperties(TestCase):
         """
         try:
             super().assertEqual(first, second, msg=msg)
-        except AssertionError, e:
+        except AssertionError as e:
             print(str(e))
 
 if __name__ == "__main__":
