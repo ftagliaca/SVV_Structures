@@ -30,12 +30,21 @@ W = W_p*np.cos(A320.theta) + V_p*np.sin(A320.theta)
 W = W*-1
 
 
-plt.subplot(131)
+plt.subplot(221)
 plt.plot(X,V)
-plt.subplot(132)
+plt.ylabel("V(x) [m]")
+plt.xlabel("x [m]")
+plt.title("Deflection in the y direction")
+plt.subplot(222)
 plt.plot(X,W)
-plt.subplot(133)
+plt.ylabel("W(x) [m]")
+plt.xlabel("x [m]")
+plt.title("Deflection in the z direction")
+plt.subplot(223)
 plt.plot(X,P_p)
+plt.ylabel("phi(x) [rad]")
+plt.xlabel("x [m]")
+plt.title("Rotation around the hinge line")
 
 plt.show()
 

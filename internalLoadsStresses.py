@@ -1,9 +1,9 @@
 from math import sqrt, cos, sin, tan
 import numpy as np
-from tools import macaulay, integrate2D, solveInternal
+from tools import macaulay, solveInternal
 from aileronProperties import Aileron
 from aero_loads import AerodynamicLoad
-from test import FiveIntegral, TripleIntegralZSC
+from integrals import FiveIntegral, TripleIntegralZSC
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 
@@ -17,7 +17,7 @@ except OSError as e:
 
 cF = solveInternal(A320, q)
 
-def normalStress(y, z, Aileron, M_z, M_y):
+def normalStress(y, z, x, M_z, M_y, Aileron, = A320):
     '''
     Input:
 
@@ -31,7 +31,7 @@ def normalStress(y, z, Aileron, M_z, M_y):
 
     sigma_x = normal stress along x axis, in Pa
     '''
-    sigma_x = (M_z*Aileron.Iyy*y + M_y*Aileron.Izz*(z-Aileron.zCentroid))/(Aileron.Izz*Aileron.Iyy)
+    sigma_x = (M_z(x)*Aileron.Iyy*y + M_y(x)*Aileron.Izz*(z-Aileron.zCentroid))/(Aileron.Izz*Aileron.Iyy)
     return sigma_x
 
 def vonMises(sigma, tau):

@@ -1,7 +1,7 @@
 import numpy as np
 from aileronProperties import Aileron
 from math import cos, sin, sqrt, tan
-from test import  FiveIntegral, TripleIntegralZSC, DoubleIntegral, DoubleIntegralZSC, ThreeIntegral
+from integrals import  FiveIntegral, TripleIntegralZSC, DoubleIntegral, DoubleIntegralZSC, ThreeIntegral
 import sympy
 
 def macaulay(x,x1):
