@@ -1,4 +1,5 @@
 from numpy import *
+import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib
@@ -170,12 +171,26 @@ def Validation_plot(LC, value): #LC = loading case, value is type of stress to s
 
     plt.show()
 
-# deflection plot
-part = Jam_str_B737_1
-ax = plt.axes(projection='3d')
-index = part[:,0].astype(int)-1
-deflected = geom_data[index,1:] + part[:,2:]
-ax.scatter(deflected[:,0],deflected[:,1],deflected[:,2],',')
-plt.show()
+indices = (geom_data[:, 2] == 0) * (geom_data[:, 3] == 0)
+data = np.loadtxt("data_validation.dat", delimiter=',')
 
-#Validation_plot(Bending_B737_1, 3)
+print("a")
+plt.figure("v")
+plt.scatter(data[0, :], data[1, :], color="red", marker="x", label="Numerical model")
+plt.scatter(geom_data[indices, 1]/1e3, Jam_bent_B737_1[indices, 3]/1e3, color="blue", marker="o", label="Validation data")
+ax = plt.gca()
+
+ax.set_xlabel('Position span [m]')
+ax.set_ylabel('Deflection in y [m]')
+plt.legend()
+
+plt.figure("w")
+plt.scatter(data[0, :], data[2, :], color="red", marker="x", label="Numerical model")
+plt.scatter(geom_data[indices, 1]/1e3, Jam_bent_B737_1[indices, 4]/1e3, color="blue", marker="o", label="Validation data")
+ax = plt.gca()
+
+ax.set_xlabel('Position span [m]')
+ax.set_ylabel('Deflection in z [m]')
+plt.legend()
+
+plt.show()
