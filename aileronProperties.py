@@ -99,6 +99,7 @@ class Aileron():
         self.z_centroid = (self.Q_stiff + c_halfcircle*A_halfcircle + c_skin * A_skin + c_spar * A_spar)\
         /(A_halfcircle + A_skin + A_spar + self.n_st * A_stif)
 
+        self.A_stif = A_stif
         return self.z_centroid
 
 

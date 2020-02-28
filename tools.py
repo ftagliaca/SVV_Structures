@@ -1,4 +1,5 @@
 import numpy as np
+from math import cos, sin, tan
 from aileronProperties import Aileron
 from math import cos, sin, sqrt, tan
 from integrals import  FiveIntegral, TripleIntegralZSC, DoubleIntegral, DoubleIntegralZSC, ThreeIntegral
@@ -36,7 +37,7 @@ def integrate(f, a, b, n = 100, p = 1):
 
 def integrate2D(f, a, b, c, d, nx, ny, p = 1):
     #http://hplgit.github.io/prog4comp/doc/pub/p4c-sphinx-Python/._pylight004.html#reusing-code-for-one-dimensional-integrals
-    print("Integrating, please wait...")
+    # print("Integrating, please wait...")
     def g(x):
         return integrate1(lambda y: f(x, y), c, d, n = ny)
 
