@@ -17,7 +17,6 @@ import math as m
 import numpy as np
 import internalLoadsStresses as ils
 import matplotlib.pyplot as plt
-import main2 as veri
 
 # import of class in order to use geometrical properties
 #
@@ -442,7 +441,7 @@ def grapher(x, y, z):
 
 # get_idealised_shear_contribution(A320)
 # mesh_points, szy_outputs, qtot = get_shear_analysis(A320)
-mesh_size = 40
+mesh_size = 200
 x = np.linspace(0, A320.l_a, num=mesh_size)  # Subsequent functions accept numpy-arrays
 y = veri.aileron.Sy(x)
 z = veri.aileron.Sz(x)

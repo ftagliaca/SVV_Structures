@@ -31,19 +31,10 @@ def find_idx(x, z):
     return find_x(x), find_z(z)
 
 def LinearInterpolatePos(Q1, Q2, x_0, x_1, x):
-    #inputs: Q1, Q2, x_0, x_1, x; values of function Q1, Q2 at points x0 and x1, respectively, and a location x where the interpolating function is to be evaluated
     return Q1 + (Q2-Q1)/(x_1 - x_0)*(x-x_0)
-
-def LinearInterpolate(Q1, Q2, x_0, x_1):
-    #returns the weights a, b of the interpolating function a + b x
-    return np.array([[Q1 - x_0*(Q2 - Q1)/(x_1 - x_0)], [(Q2 - Q1)/(x_1 - x_0)]])
-
 
 
 def integrate_1d(x, y, x_f):
-    #inputs: x; an array containing all the x-locationx of the points. y; an array containing all the y values of the points. x_i; the value of x to where we integrate.
-    #outputs total; the total integrated value until x_i.
-
     if x_f > x[-1]:   #if x_f is outside of the range covered by input, we return the total integral of what we can integrate over
         x_f = x[-1]
     if x_f < x[0]:    #if x_f is lower than the lowest x_value, return 0
@@ -54,17 +45,13 @@ def integrate_1d(x, y, x_f):
     i = 1
     while x[i] < x_f:
         total += (x[i] - x[i-1])*(y[i]+y[i-1])/2
-        #print(x[i-1], x[i], total)
         i += 1
     i -= 1
     if x_f > x[i]:
         total += (x_f - x[i])*(LinearInterpolatePos(y[i], y[i+1], x[i], x[i+1], x_f) + y[i])/2
-        #print(x[i], x_f, total)
     return total
 
 def integrate_1d_list(x, y, x_f):
-    #inputs: x, y; lists containing the locations and values of all data points. x_f; the maximum location until which we integrate
-    #outputs: x_new; a list containing all the data locatations up to x_f, and x_f if that is not already in the list. int_list; a list containing the integrated values at each location in x_new
     int_list = []
     x_new = []
     i = 1
@@ -159,16 +146,16 @@ x, z = make_x_z()
 def make_w_bar(AeroLoading = AeroLoading):
     x, z = make_x_z()
     w_bar = []
-    for index in range(len(x)):
-        w_bar = [integrate_1d(z, AeroLoading[:,index], z[-1])] + w_bar
+    for i in range(len(x)):
+        w_bar = [integrate_1d(z, AeroLoading[:,i], z[-1])] + w_bar
     return w_bar
 w_bar = make_w_bar()
 
 def make_tau(x_sc, AeroLoading = AeroLoading):
     x, z = make_x_z()
     tau = []
-    for index in range(len(x)):
-        tau = [integrate_1d_tau(z, AeroLoading[:,index], z[-1], x_sc)] + tau
+    for i in range(len(x)):
+        tau = [integrate_1d_tau(z, AeroLoading[:,i], z[-1], x_sc)] + tau
     return tau
 
 
@@ -193,19 +180,14 @@ def ThreeIntegral(x_f):
 
 def FiveIntegral(x_f):
     x = make_x_z()[0]
-    #Integration 1
     w_bar = make_w_bar()
 
-    #Integration 2
     int_list_2, x_list_2 = integrate_1d_list(x, w_bar, x_f)
 
-    #Integration 3
     int_list_3, x_list_3 = integrate_1d_list(x_list_2, int_list_2, x_f)
 
-    #Integratioan 4
     int_list_4, x_list_4 = integrate_1d_list(x_list_3, int_list_3, x_f)
 
-    #Integration 5
     return integrate_1d(x_list_4, int_list_4, x_f)
 
 def DoubleIntegralZSC(x_f, z_sc):
@@ -216,11 +198,8 @@ def DoubleIntegralZSC(x_f, z_sc):
 def TripleIntegralZSC(x_f, z_sc):
     x = make_x_z()[0]
 
-    #Make Tau (integration 1)
     tau = make_tau(z_sc)
 
-    #Integration 2
     int_list_2, x_list_2 = integrate_1d_list(x, tau, x_f)
 
-    #Integration 3
     return integrate_1d(x_list_2, int_list_2, x_f)

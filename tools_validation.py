@@ -5,6 +5,20 @@ from math import cos, sin, sqrt, tan
 from integrals import  FiveIntegral, TripleIntegralZSC, DoubleIntegral, DoubleIntegralZSC, ThreeIntegral
 import sympy
 
+B737 = Aileron(0.605, 2.661, 0.171,1.211,2.591,35,20.5,1.1,2.8,1.2,1.6,1.9,15,1.154,1.840,28,97.4)
+Q_coord = np.array([[ 0.,0.,-0.04875],
+ [ 0.26610001,0.,-0.04875   ],
+ [ 0.53220001,0.,-0.04875   ],
+ [ 0.79829999,  0.,-0.04875   ],
+ [ 1.06440002,0.,-0.04875   ],
+ [ 1.3305,0.,-0.04875   ],
+ [ 1.59659998,0.,-0.04875   ],
+ [ 1.86269995,0.,-0.04875   ],
+ [ 2.12880005,0.,-0.04875   ],
+ [ 2.3948999,0.,-0.04875   ],
+ [ 2.661,0.,-0.04875   ]])
+Q = [-0.737, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -0.737]
+
 def macaulay(x,x1):
     return x-x1 if (x-x1)>0 else 0
 
@@ -43,8 +57,6 @@ def solveInternal(alr: Aileron, q):
 
     T = sin(theta)*z_hat-cos(theta)*r
 
-    def dtau(z, x):
-        return q(z,x)*(z-z_hat)
 
     '''
     A = np.matrix([[x_1,1,0,0,z_hat+r,0,0,0,0,0,0,0],#v_1+p_1*(z+r) = d_1cos(theta)
