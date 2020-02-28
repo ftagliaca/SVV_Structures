@@ -6,14 +6,14 @@ from integrals import  FiveIntegral, TripleIntegralZSC, DoubleIntegral, DoubleIn
 import sympy
 
 B737 = Aileron(0.605, 2.661, 0.171,1.211,2.591,35,20.5,1.1,2.8,1.2,1.6,1.9,15,1.154,1.840,28,97.4)
-Q_coord = [ 0.,0.26610001,0.53220001,0.79829999,  1.06440002,1.3305,1.59659998,1.86269995,2.12880005,2.3948999,2.661]
+Q_coord = np.array([ 0.,0.26610001,0.53220001,0.79829999,  1.06440002,1.3305,1.59659998,1.86269995,2.12880005,2.3948999,2.661])
 Q_z = -0.04875
-Q = [-0.737, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -0.737]
+Q = np.array([-0.737, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -0.737])
 
 def macaulay(x,x1):
     return x-x1 if (x-x1)>0 else 0
 
-def solveInternal(alr: Aileron, q):
+def solveInternal(alr: Aileron):
     '''
     Input:
 
@@ -35,7 +35,7 @@ def solveInternal(alr: Aileron, q):
     h_a = alr.h
     I_yy = alr.Iyy
     I_zz = alr.Izz
-    J = 0.00024311681258111343
+    J = 0.00022293131689593327
     G = alr.G
     E = alr.E
     l_a = alr.l_a
@@ -43,7 +43,7 @@ def solveInternal(alr: Aileron, q):
     r = alr.r
     d_1 = alr.d_1
     d_3 = alr.d_3
-    z_hat = 0.215
+    z_hat = 0.24023
     P = alr.P
 
     T = sin(theta)*z_hat-cos(theta)*r
@@ -96,16 +96,16 @@ def solveInternal(alr: Aileron, q):
     _, inds = sympy.Matrix(A).T.rref()
     print(inds)
 
-    b = np.matrix([[d_1*cos(theta)-Q[0]*(x_1)**3/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_1,z_hat)/(G*J)],
-                   [-d_1*sin(theta)+r*TripleIntegralZSC(x_1,z_hat)/(G*J)],
-                   [-FiveIntegral(x_2)/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_2,z_hat)/(G*J)],
-                   [r*TripleIntegralZSC(x_2, z_hat)/(G*J)],
-                   [d_3*cos(theta)-FiveIntegral(x_3)/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_3,z_hat)/(G*J)-P*(sin(theta)*(x_3-x_II)**3/(6*E*I_zz)+T*(z_hat+r)*(x_3-x_II)/(G*J))],
-                   [-d_3*sin(theta)+r*TripleIntegralZSC(x_1,z_hat)/(G*J)+P*(cos(theta)*(x_3-x_II)**3/(6*E*I_yy)+r*T*(x_3-x_II)/(G*J))],
-                   [(-(z_hat+r)*sin(theta)+r*cos(theta))*TripleIntegralZSC(x_I,z_hat)/(G*J)-FiveIntegral(x_I)*sin(theta)/(6*E*I_zz)],
-                   [P*sin(theta)+DoubleIntegral(l_a)],
+    b = np.matrix([[d_1*cos(theta)-Q[0]*(x_1)**3/(6*E*I_zz)+(z_hat+r)*Q[0]*(z_hat-Q_z)*x_1/(G*J)],
+                   [-d_1*sin(theta)+r*Q[0]*(z_hat-Q_z)*x_1/(G*J)],
+                   [-np.sum((Q[:5]*(x_2-Q_coord[:5])**3))/(6*E*I_zz)-(z_hat+r)*np.sum(Q[:5]*(z_hat-Q_z)*(x_1-Q_coord[:5]))/(G*J)],
+                   [r*np.sum(Q[:5]*(z_hat-Q_z)*(x_1-Q_coord[:5]))/(G*J)],
+                   [d_3*cos(theta)-np.sum((Q[:10]*(x_3-Q_coord[:10])**3))/(6*E*I_zz)-(z_hat+r)*np.sum(Q[:10]*(z_hat-Q_z)*(x_1-Q_coord[:10]))/(G*J)-P*(sin(theta)*(x_3-x_II)**3/(6*E*I_zz)+T*(z_hat+r)*(x_3-x_II)/(G*J))],
+                   [-d_3*sin(theta)+r*np.sum(Q[:6]*(z_hat-Q_z)*(x_1-Q_coord[:6]))/(G*J)+P*(cos(theta)*(x_3-x_II)**3/(6*E*I_yy)+r*T*(x_3-x_II)/(G*J))],
+                   [(-(z_hat+r)*sin(theta)+r*cos(theta))*np.sum(Q[:4]*(z_hat-Q_z)*(x_1-Q_coord[:4]))/(G*J)-np.sum((Q[:4]*(x_I-Q_coord[:4])**3))*sin(theta)/(6*E*I_zz)],
+                   [P*sin(theta)+np.sum(Q)],
                    [-P*cos(theta)],
-                   [+P*sin(theta)*(l_a-x_II)+ThreeIntegral(l_a)],
+                   [+P*sin(theta)*(l_a-x_II)+np.sum((Q[:]*(l_a-Q_coord[:])))],
                    [-P*cos(theta)*(l_a-x_II)],
                    [0]],dtype='float')
                    #[-P*T-DoubleIntegralZSC(l_a,z_hat)]],dtype='float')
@@ -139,6 +139,6 @@ def solveInternal(alr: Aileron, q):
     '''
     x = np.linalg.solve(A,b)
     header = 'C1, C2, C3, C4, C5, F_1y, F_1z, F_2y, F_2z, F_3y, F_3z, P_I'
-    np.savetxt("reactionForces.dat", x, delimiter=",", header = header)
+    np.savetxt("reactionForces_validation.dat", x, delimiter=",", header = header)
     print(np.allclose(np.dot(A, x), b))
     return x

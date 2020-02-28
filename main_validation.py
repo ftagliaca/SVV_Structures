@@ -1,5 +1,5 @@
 from aileronProperties import Aileron
-from internalLoadsStresses import solveInternal, v, w, phi
+from internalLoadsStresses_validation import solveInternal, v, w, phi
 from aero_loads import AerodynamicLoad
 import numpy as np
 from matplotlib import pyplot as plt
@@ -47,6 +47,9 @@ plt.xlabel("x [m]")
 plt.title("Rotation around the hinge line")
 
 plt.show()
+
+data = np.vstack((X, V, W, P_p))
+np.savetxt("data_validation.dat", data, delimiter=",")
 
 
 
