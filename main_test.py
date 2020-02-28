@@ -7,6 +7,7 @@ import Energy
 import Stiffness
 import Stress
 import math as m
+from shearCenterBuild import get_shear_center, torsional_stiffness
 
 
 class GeometricalProperties(TestCase):
@@ -128,7 +129,8 @@ class GeometricalProperties(TestCase):
     
     def test_geometry(self):
         for aircraft in ["A320", "B737", "CRJ700", "Do228", "Fokker100"]:
-            print(f"Running test on {aircraft}")
+            print(); print()
+            print(f"#####     Running test on {aircraft}     #####")
             self.load_aircraft(aircraft)
             
             print("- Stringer coordinates")
@@ -156,21 +158,20 @@ class GeometricalProperties(TestCase):
             
             print("- Shear centre")
             print(f"Should be (y, z): {self.crosssection.ysc, self.crosssection.zsc}")
-            print(f"              is: {'?', '?'}")
+            print(f"              is: {0, get_shear_center(self.aileron)}")
             
-            self.assertEqual((self.crosssection.ysc, self.crosssection.zsc), (-1, -1), msg="Shear centre is not correct.")
+            self.assertEqual((self.crosssection.ysc, self.crosssection.zsc), (0, get_shear_center(self.aileron)), msg="Shear centre is not correct.")
             
             print("- Torsional constant")
-            print("!!TODO: Compare automatically!!")
             print(f"Should be: {self.crosssection.J}")
-            print(f"         : {'?'}")
+            print(f"         : {torsional_stiffness(self.aileron)}")
             
-            self.assertEqual(self.crosssection.J, -1, msg="MoI is not correct.")
+            self.assertEqual(self.crosssection.J, torsional_stiffness(self.aileron), msg="MoI is not correct.")
         
 
     def assertAlmostEqual(self, first, second, places=None, msg=None, delta=None):
         try:
-            super().assertEqual(first, second, places=None, msg=None, delta=None)
+            super().assertAlmostEqual(first, second, places=None, msg=None, delta=None)
             print("Correct.")
         except AssertionError:
             print("Incorrect")
