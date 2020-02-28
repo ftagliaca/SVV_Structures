@@ -30,7 +30,8 @@ def solveInternal(alr: Aileron, q):
     h_a = alr.h
     I_yy = alr.Iyy
     I_zz = alr.Izz
-    J = 0.00024311681258111343
+    #J = 0.00024311681258111343
+    J = alr.J
     G = alr.G
     E = alr.E
     l_a = alr.l_a
@@ -38,7 +39,8 @@ def solveInternal(alr: Aileron, q):
     r = alr.r
     d_1 = alr.d_1
     d_3 = alr.d_3
-    z_hat = 0.215
+    #z_hat = 0.215
+    z_hat = alr.z_hat
     P = alr.P
 
     T = sin(theta)*z_hat-cos(theta)*r

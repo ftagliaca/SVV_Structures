@@ -6,17 +6,8 @@ from integrals import  FiveIntegral, TripleIntegralZSC, DoubleIntegral, DoubleIn
 import sympy
 
 B737 = Aileron(0.605, 2.661, 0.171,1.211,2.591,35,20.5,1.1,2.8,1.2,1.6,1.9,15,1.154,1.840,28,97.4)
-Q_coord = np.array([[ 0.,0.,-0.04875],
- [ 0.26610001,0.,-0.04875   ],
- [ 0.53220001,0.,-0.04875   ],
- [ 0.79829999,  0.,-0.04875   ],
- [ 1.06440002,0.,-0.04875   ],
- [ 1.3305,0.,-0.04875   ],
- [ 1.59659998,0.,-0.04875   ],
- [ 1.86269995,0.,-0.04875   ],
- [ 2.12880005,0.,-0.04875   ],
- [ 2.3948999,0.,-0.04875   ],
- [ 2.661,0.,-0.04875   ]])
+Q_coord = [ 0.,0.26610001,0.53220001,0.79829999,  1.06440002,1.3305,1.59659998,1.86269995,2.12880005,2.3948999,2.661]
+Q_z = -0.04875
 Q = [-0.737, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -1.474, -0.737]
 
 def macaulay(x,x1):
@@ -105,7 +96,7 @@ def solveInternal(alr: Aileron, q):
     _, inds = sympy.Matrix(A).T.rref()
     print(inds)
 
-    b = np.matrix([[d_1*cos(theta)-FiveIntegral(x_1)/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_1,z_hat)/(G*J)],
+    b = np.matrix([[d_1*cos(theta)-Q[0]*(x_1)**3/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_1,z_hat)/(G*J)],
                    [-d_1*sin(theta)+r*TripleIntegralZSC(x_1,z_hat)/(G*J)],
                    [-FiveIntegral(x_2)/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_2,z_hat)/(G*J)],
                    [r*TripleIntegralZSC(x_2, z_hat)/(G*J)],
