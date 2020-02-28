@@ -17,7 +17,7 @@ ax.set_zlabel("y")
 # interpolation stuff
 # Overwriting the grid functions because of simpler grid
 
-aero_load = AerodynamicLoad(A320, 'aerodynamicloada320.dat')
+aero_load = AerodynamicLoad(A320, 'data/aerodynamicloada320.dat')
 
 z_sizes = -aero_load.grid_z_coordinates[:-1] + aero_load.grid_z_coordinates[1:]
 x_sizes = -aero_load.grid_x_coordinates[:-1] + aero_load.grid_x_coordinates[1:]
@@ -42,9 +42,11 @@ ax.plot_wireframe(Z, X, data, color='green')
 
 
 # plotting
-data = np.genfromtxt('aerodynamicloada320.dat', delimiter=',') * 1e3
+data = np.genfromtxt('data/aerodynamicloada320.dat', delimiter=',') * 1e3
 print("data:", data.shape)
 n_z, n_x = data.shape
+
+print("avergae:", np.average(data))
 
 Z, X = np.meshgrid(A320.z_i(np.arange(n_z) + 1), A320.x_i(np.arange(n_x) + 1), indexing='ij')
 print("n_z", n_z, "n_x", n_x)

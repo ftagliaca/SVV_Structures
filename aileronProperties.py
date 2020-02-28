@@ -113,8 +113,8 @@ class Aileron():
             but the single cross sectional areas are available
         '''
 
-        self.A1 = math.pi*(self.h**2)/8 #Area of semicircle
-        self.A2 = 0.5*self.h*(self.C_a - self.h/2) #Area of triagle
+        self.A1 = math.pi*(self.r**2)/2 #Area of semicircle
+        self.A2 = 0.5*self.h*(self.C_a - self.r) #Area of triagle
         self.A = self.A1 + self.A2
 
         return self.A
@@ -198,7 +198,7 @@ class Aileron():
         return self.J1, self.J2
 
 
-    def z_i(self, i, N_z = 81):
+    def z_i(self, i, N_z = 81, i1 = 0):
         '''
         Inputs:
         i = ith row in spanwise direction
@@ -208,13 +208,13 @@ class Aileron():
         z_i = z-coordinate of station
         '''
 
-        theta = (i - 1) * math.pi/N_z
+        theta = (i - 1 + i1) * math.pi/N_z
         theta_1 = i * math.pi/N_z
         z_i = -0.5 * (0.5 * self.C_a * (1 - np.cos(theta)) + 0.5 * self.C_a * (1 - np.cos(theta_1)))
 
         return z_i
 
-    def x_i(self, i, N_x = 41):
+    def x_i(self, i, N_x = 41, i1 = 0):
         '''
         Inputs:
         i = ith column in chordwise direction
@@ -224,7 +224,7 @@ class Aileron():
         x_i = x-coordinate of station
         '''
 
-        theta = (i - 1) * math.pi/N_x
+        theta = (i - 1 + i1) * math.pi/N_x
         theta_1 = i * math.pi/N_x
         x_i = 0.5 * (0.5 * self.l_a * (1 - np.cos(theta)) + 0.5 * self.l_a * (1 - np.cos(theta_1)))
 

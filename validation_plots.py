@@ -170,4 +170,12 @@ def Validation_plot(LC, value): #LC = loading case, value is type of stress to s
 
     plt.show()
 
-Validation_plot(Bending_B737_1, 3)
+# deflection plot
+part = Jam_str_B737_1
+ax = plt.axes(projection='3d')
+index = part[:,0].astype(int)-1
+deflected = geom_data[index,1:] + part[:,2:]
+ax.scatter(deflected[:,0],deflected[:,1],deflected[:,2],',')
+plt.show()
+
+#Validation_plot(Bending_B737_1, 3)
