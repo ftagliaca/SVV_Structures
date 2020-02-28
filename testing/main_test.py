@@ -103,7 +103,29 @@ class GeometricalProperties(TestCase):
             self.theta = 30
             self.P     = 49.2
             
+        ## Model stuff
+        self.aileron = Aileron(self.Ca, self.la, self.x1, self.x2, self.x3, self.xa, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst, self.nst, self.d1, self.d3, self.theta, self.P)
         
+        print(f"aileron.C_a   = {self.aileron.C_a}")
+        print(f"aileron.l_a   = {self.aileron.l_a}")
+        print(f"aileron.x_1   = {self.aileron.x_1}")
+        print(f"aileron.x_2   = {self.aileron.x_2}")
+        print(f"aileron.x_3   = {self.aileron.x_3}")
+        print(f"aileron.x_a   = {self.aileron.x_a}")
+        print(f"aileron.h     = {self.aileron.h}")
+        print(f"aileron.t_sk  = {self.aileron.t_sk}")
+        print(f"aileron.t_sp  = {self.aileron.t_sp}")
+        print(f"aileron.t_st  = {self.aileron.t_st}")
+        print(f"aileron.h_st  = {self.aileron.h_st}")
+        print(f"aileron.w_st  = {self.aileron.w_st}")
+        print(f"aileron.n_st  = {self.aileron.n_st}")
+        print(f"aileron.d_1   = {self.aileron.d_1}")
+        print(f"aileron.d_3   = {self.aileron.d_3}")
+        print(f"aileron.theta = {self.aileron.theta}")
+        print(f"aileron.P     = {self.aileron.P}")
+
+        ## Verification stuff
+        self.ha /= 1e2  # cm to m
         self.tsk /= 1e3  # mm to m
         self.tsp /= 1e3  # mm to m
         self.tst /= 1e3  # mm to m
@@ -113,15 +135,31 @@ class GeometricalProperties(TestCase):
         self.d3  /= 1e2  # cm to m
         self.theta = m.radians(self.theta)
         self.P   *= 1e3  # kN to N
+
+        print(f"self.Ca    = {self.Ca}")
+        print(f"self.la    = {self.la}")
+        print(f"self.x1    = {self.x1}")
+        print(f"self.x2    = {self.x2}")
+        print(f"self.x3    = {self.x3}")
+        print(f"self.xa    = {self.xa}")
+        print(f"self.ha    = {self.ha}")
+        print(f"self.tsk   = {self.tsk}")
+        print(f"self.tsp   = {self.tsp}")
+        print(f"self.tst   = {self.tst}")
+        print(f"self.hst   = {self.hst}")
+        print(f"self.wst   = {self.wst}")
+        print(f"self.nst   = {self.nst}")
+        print(f"self.d1    = {self.d1}")
+        print(f"self.d3    = {self.d3}")
+        print(f"self.theta = {self.theta}")
+        print(f"self.P     = {self.P}")
         
-        ## Verification stuff
-        self.crosssection = Stiffness.self.crosssection(self.nst, self.Ca, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst)
+        self.crosssection = Stiffness.crosssection(self.nst, self.Ca, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst)
         self.crosssection.compute_bending_properties()   # Run the calculations
         self.crosssection.compute_shearcenter()   # Run the calculations
         self.crosssection.compute_torsionalstiffness()   # Run the calculations
         
-        ## Model stuff
-        self.aileron = Aileron(self.Ca, self.la, self.x1, self.x2, self.x3, self.xa, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst, self.nst, self.d1, self.d3, self.theta, self.P)
+        
 
     
     def test_geometry(self):
