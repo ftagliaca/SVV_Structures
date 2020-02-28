@@ -15,6 +15,9 @@ Sz and Sy are taken to be nonzero so Izz and Iyy are required.
 
 import math as m
 import numpy as np
+import internalLoadsStresses as ils
+import matplotlib.pyplot as plt
+import main2 as veri
 
 # import of class in order to use geometrical properties
 #
@@ -36,19 +39,19 @@ def z_ii(aircraft_class):
     return z_2
 
 
-def get_constants(Szy_list, aircraft_class):
+def get_constants(szy_list, aircraft_class):
     '''
     Step for calculating the constants Lambda = - Sz / Iyy and Lambda = - Sy / Izz. Note Lambda is arbitrarily set \
     during the derivation phase, not equivalent to anything in literature.
-    :param Szy_list: list of size 2 of the shear forces in z and y direction respectively.
+    :param szy_list: list of size 2 of the shear forces in z and y direction respectively.
     : param aircraft_class: Using the MoI values calculated from the aileronProperties section.
     :return: tuple containing both Lambdas (Lambda_z, Lambda_y)
     '''
     iyy, izz = aircraft_class.momInertia()
-    Lambda_z = - Szy_list[0] / iyy
-    Lambda_y = - Szy_list[1] / izz
+    const_z = - szy_list[0] / iyy
+    const_y = - szy_list[1] / izz
 
-    return np.array([Lambda_z, Lambda_y])
+    return np.array([const_z, const_y])
 
 
 def get_idealised_shear_flow(aircraft_class):
@@ -204,10 +207,10 @@ def get_shear_center(aircraft_class):
         :return:
         '''
         # Calculate the terms in the matrix A and initialise matrix A
-        a_11 = (1 / 2 * m.pi * radius) / t_skin + h_spar / t_spar
+        a_11 = (m.pi * radius) / t_skin + h_spar / t_spar
         a_12 = - h_spar / t_spar
         a_21 = a_12
-        a_22 = l_sk / t_skin + h_spar / t_spar
+        a_22 = (2 * l_sk / t_skin) + h_spar / t_spar
         a_matrix = np.array([[a_11, a_12],
                              [a_21, a_22]])
         # Matrix B is a 2x1 matrix to be solved for
@@ -221,7 +224,7 @@ def get_shear_center(aircraft_class):
         return np.linalg.solve(a_matrix, b_matrix)
 
     c_matrix = get_sc_twist()
-    print('c_matrix: ', c_matrix)
+    # print('c_matrix: ', c_matrix)
     d = get_shortest_normal(aircraft_class)
 
     A_i = aircraft_class.A1
@@ -229,7 +232,7 @@ def get_shear_center(aircraft_class):
     # solve for shear centre
     eta = - ((qb_list[0, 0] + qb_list[0, 2]) * (1 / 2 * m.pi * radius * radius) + (
             qb_list[1, 0] + qb_list[1, 2]) * l_sk * d + 2 * A_i * c_matrix[0] + A_ii * c_matrix[1])
-    print('eta is: ', eta)
+    # print('eta is: ', eta)
 
     # Output eta as a distance from the leading edge of the aileron
     return eta
@@ -270,10 +273,12 @@ def get_shear_distr(aircraft_class, szy_magnit, szy_applied):
     mom_rhs = mom_rhs_y + mom_rhs_z - mom_known
 
     # preparing terms from twist compatibility equations
-    twist_11 = (1 / 2 * m.pi * radius) / t_skin + h_spar / t_spar
-    twist_12 = - h_spar / t_spar
-    twist_21 = twist_12
-    twist_22 = l_sk / t_skin + h_spar / t_spar
+    twist_a1 = 1 / (2 * aircraft_class.A1)
+    twist_a2 = 1 / (2 * aircraft_class.A2)
+    twist_11 = ((m.pi * radius) / t_skin + h_spar / t_spar) * twist_a1
+    twist_12 = - h_spar / t_spar * twist_a1
+    twist_21 = - h_spar / t_spar * twist_a2
+    twist_22 = (2 * l_sk / t_skin + h_spar / t_spar) * twist_a2
 
     twist_rhs_1 = -1 * ((q_base[0, 0] + q_base[0, 2]) / t_skin * (1 / 2 * m.pi * radius) +
                         q_base[0, 1] * h_spar / t_spar)
@@ -282,23 +287,92 @@ def get_shear_distr(aircraft_class, szy_magnit, szy_applied):
 
     # combine all into large 3x3 matrix and solve using the power of linear algebra
     big_chungus_r1 = np.array([mom_unknown_i, mom_unknown_ii, 0])
-    big_chungus_r2 = np.array([twist_11, twist_12, 1])
-    big_chungus_r3 = np.array([twist_21, twist_22, 1])
+    big_chungus_r2 = np.array([twist_11, twist_12, -1])
+    big_chungus_r3 = np.array([twist_21, twist_22, -1])
     big_chungus_lhs = np.vstack((big_chungus_r1, big_chungus_r2, big_chungus_r3))
     big_chungus_rhs = np.array([[mom_rhs], [twist_rhs_1], [twist_rhs_2]])
     q0s = np.linalg.solve(big_chungus_lhs, big_chungus_rhs)
-    print(q_base)
-    print(np.hstack((q0s[0,0] * np.ones((2,1)), q0s[1,0] * np.ones((2,1)))))
-    q_tot = q_base + np.vstack((q0s[0,0] * np.ones((1,3)), q0s[1,0] * np.ones((1,3))))
-    print(q_tot)
+    # print(q_base)
+    # print(np.hstack((q0s[0, 0] * np.ones((2, 1)), q0s[1, 0] * np.ones((2, 1)))))
+    q_tot = q_base + np.vstack((q0s[0, 0] * np.ones((1, 3)), q0s[1, 0] * np.ones((1, 3))))
+    # print(q_tot)
     q0s = np.transpose(q0s)
-    print(q0s)
+    # print(q0s)
     # output formats:
     # q0s gives a 1x3 matrix, with q0I, q0II and d/dz theta
     # q_base gives a 2x3 matrix with the q_base on each wall, row is cell, column is wall
     # q_tot gives a 2x3 matrix with q_tot = q_base + q0,cell, row is cell, column is wall
     return q0s, q_base, q_tot
 
+
+def init_get_szy(aircraft_class, x_mesh_size):
+    x_max = aircraft_class.l_a  # aileron length
+    # creates a list of mesh points in x direction.
+    slice_length = x_max / x_mesh_size
+    x_mesh_points = [round(slice_length * n, 4) for n in range(0, x_mesh_size + 1, 1)]
+    x_mesh_points = np.asarray(x_mesh_points)  # convert to numpy array for speed
+    yield x_mesh_points
+    for idx in range(x_mesh_points.size):
+        x_point = x_mesh_points[idx]
+        s_z = float(ils.S_z(x_point))  # / 1e3
+        s_y = ils.S_y(x_point)  # / 1e3
+        print('shear in z and y: ', np.array([s_z, s_y]))
+        yield np.array([s_z, s_y])
+    # return x_mesh_points
+
+
+def torsional_stiffness(aircraft_class):
+    # aileron dimensions and thicknesses imported through self.
+    r = aircraft_class.h / 2
+    z_tr = aircraft_class.C_a - r
+    ds_halfcircle = m.pi * r
+    ds_spar = aircraft_class.h
+    ds_skin = m.sqrt((r * r) + (z_tr * z_tr))
+    t_sp = aircraft_class.t_sp
+    t_sk = aircraft_class.t_sk
+
+    a1 = aircraft_class.A1
+    a2 = aircraft_class.A2
+    # print(r, a1,a2)
+    #
+    print(t_sk, t_sp)
+
+    # terms from the twist compatibility equation
+    twist_a1 = 1 / (2 * a1)
+    twist_a2 = 1 / (2 * a2)
+    twist_11 = ((m.pi * r) / t_sk + ds_spar / t_sp) * twist_a1
+    twist_12 = - ds_spar / t_sp * twist_a1
+    twist_21 = - ds_spar / t_sp * twist_a2
+    twist_22 = (2 * ds_skin / t_sk + ds_spar / t_sp) * twist_a2
+
+    a_mat = np.array([[2 * a1, 2 * a2, 0],
+                      [twist_11, twist_12, -1],
+                      [twist_21, twist_22, -1]])
+    b_mat = np.array([[1], [0], [0]])
+
+    # solve for the G_d/dz_theta
+    g_dtdz = np.linalg.solve(a_mat, b_mat)
+    # print('g_dtdz', g_dtdz)
+    # divide the following formula in part with A1 and A2
+    # Both parts should consist of a spar part and the rest
+    # Gdthetadz = 1 / (2 * a1) * (
+    #         (shearflows[0, 0] + shearflows[0, 2]) * ds_quartercircle / t_sk +
+    #         shearflows[0, 1] * ds_spar / t_sp) + 1 / (2 * a2) * (
+    #                     (shearflows[1, 0] + shearflows[1, 2]) * ds_skin / t_sk + shearflows[1, 1] * ds_spar / t_sp)
+
+    # T = 1  # given assumption
+    J = 1 / g_dtdz[-1]
+
+    return J
+
+
+# def get_torsional_j(aircraft_class):
+
+
+# def gen_szy(x_mesh_points):
+#
+#
+#     # return szy_list
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 # q = aeroLoad.get_value_at
@@ -307,6 +381,78 @@ _ = A320.stringersPosition()
 _ = A320.zCentroid()
 _ = A320.momInertia()
 
-get_shear_center(A320)
-get_shear_distr(A320, [0,1], [0,0])
+
+def get_shear_analysis(aircraft_class, mesh_size, extx, exty, extz):
+    z_SC = float(get_shear_center(aircraft_class))
+    print('z_SC', z_SC)
+    szy_gen = init_get_szy(A320, mesh_size)
+    mesh_points = szy_gen.__next__()
+    j = torsional_stiffness(aircraft_class)
+    print('j', j)
+    if len(extx) > 0:
+        mesh_points = mesh_size
+        szy_list = [[extz[n], exty[n]] for n in range(0, mesh_size,1)]
+        for x_idx in range(mesh_points):
+            # szy_current = [extz[x_idx],exty[x_idx]]
+            q0s, qbases, qtotals = get_shear_distr(A320, szy_list[x_idx], [z_SC, 0])
+            print('qtotals: ', x_idx,'\n', qtotals)
+
+
+    else:
+        szy_list = np.zeros((mesh_size + 1, 2))
+        qtotals = []
+        for idx in range(0, mesh_size + 1):
+            try:
+                # print('output', szy_gen.__next__())
+                szy_current = szy_gen.__next__()
+                szy_list[idx, 0] = szy_current[0]
+                szy_list[idx, 1] = szy_current[1]
+                # q0s, qbases, qtotals = get_shear_distr(A320, next(szy_gen), [z_SC, 0])
+                q0s, qbases, qtotals = get_shear_distr(A320, szy_current, [z_SC, 0])
+                # print('q0s: \n', q0s)
+                # print('qbases: \n', qbases)
+                print('qtotals: \n', qtotals)
+                # idx += 1
+
+            except StopIteration:
+                break
+
+    return mesh_points, szy_list, qtotals
+
+
+def grapher(x, y, z):
+    plt.title("Shear in y axis")
+    plt.xticks(x, rotation=40)
+    plt.ylabel('Shear force [N]')
+    plt.xlabel('x-location [m]')
+    plt.plot(x, y)
+    plt.show()
+
+    plt.title("Shear in z axis")
+    plt.xticks(x, rotation=40)
+    plt.ylabel('Shear force [N]')
+    plt.xlabel('x-location[m]')
+    plt.plot(x, z)
+    plt.show()
+
+
+# szy_list = list(szy_gen)
+# print('szy_list: \n', szy_list)
+# get_shear_distr(A320, [0, 1], [0, 0])
+
 # get_idealised_shear_contribution(A320)
+# mesh_points, szy_outputs, qtot = get_shear_analysis(A320)
+mesh_size = 40
+x = np.linspace(0, A320.l_a, num=mesh_size)  # Subsequent functions accept numpy-arrays
+y = veri.aileron.Sy(x)
+z = veri.aileron.Sz(x)
+# z = [-142927.3208521, 50482.49383354, 47337.01848392, 28483.05827346,
+#      81931.44007969, -47482.17520149, -40350.65987382, -50588.59840216,
+#      -52326.56806738, 109083.76089247]
+# y = [-40780.67606372, -24640.70289515, -23940.76485954, -27257.63765062,
+#      21286.85433852, 14219.16544322, 13295.9750672, 8606.43415073,
+#      9175.02022091, 90179.46565151]
+mesh_points, szy_outputs, qtot = get_shear_analysis(A320,mesh_size, x, y, z)
+print(qtot)
+# grapher(mesh_points, szy_outputs[:, 0], szy_outputs[:, 1])
+grapher(x, y, z)

@@ -1,4 +1,5 @@
 from math import sqrt, cos, sin, tan
+
 import numpy as np
 from tools import macaulay, integrate2D, solveInternal
 from aileronProperties import Aileron
@@ -92,7 +93,7 @@ def phi(x, aileron = A320):
     T = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
 
     phi_tot  = cF[11]*macaulay(x, aileron.x_I)*T
-    phi_tot += -aileron.P*macaulay(x, x_II)*T
+    phi_tot += -aileron.P*macaulay(x, aileron.x_II)*T
     phi_tot += -integrate2D(q, aileron.C_a, 0, 0, x, 10, 10, p=2)
     phi_tot *= (1/aileron.G*aileron.J)
     phi_tot += cF[4]
@@ -116,7 +117,7 @@ def M_z(x, aileron = A320):
     M_z_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)
     M_z_tot += -integrate2D(q, aileron.C_a, 0, 0, x, 0, 0, p=2)
 
-    return M_y_tot
+    return M_z_tot
 
 def T(x, aileron = A320):
     def dtau(z, x):
