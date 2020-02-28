@@ -1,0 +1,195 @@
+orrect
+Correct.
+- Moment of Inertia position
+Should be (I_yy, I_zz): (5.377416790820396e-05, 1.4221538884296291e-05)
+                    is: (4.813943388937795e-05, 1.4221538884296297e-05)
+Incorrect
+- Shear centre
+Not 17
+- Torsional constant
+Should be: 0.0002656923628031168
+0.0011 0.0022
+       is: [1.9193312e-05]
+0.0011 0.0022
+Incorrect
+
+
+#####     Running test on Fokker100     #####
+- Stringer coordinates
+Correct.
+- Cross-sectional area
+Should be: 0.0020111318843290065
+       is: 0.04435140289671263
+Incorrect
+- Centroid position
+Should be (y, z): (0.0, -0.20362591085157106)
+              is: (0, -0.203625910851571)
+Correct.
+Incorrect
+- Moment of Inertia position
+Should be (I_yy, I_zz): (4.5943507864451845e-05, 4.753851442684437e-06)
+                    is: (4.243280645574992e-05, 4.753851442684437e-06)
+Incorrect
+- Shear centre
+Not 17
+- Torsional constant
+Should be: 0.00017531714118864135
+0.0011 0.0024
+       is: [7.74854856e-06]
+0.0011 0.0024
+Incorrect
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.243s
+
+OK
+
+(base) C:\Users\thijs\Downloads\svv testing\SVV-master>python main_test.py
+12
+(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+True
+
+
+#####     Running test on A320     #####
+- Stringer coordinates
+Correct.
+- Cross-sectional area
+Should be: 0.0027426935105400304
+       is: 0.06876164101099792
+Incorrect
+- Centroid position
+Should be (y, z): (0.0, -0.21577972811362234)
+              is: (0, -0.21577972811362242)
+Correct.
+Incorrect
+- Moment of Inertia position
+Should be (I_yy, I_zz): (6.86413733566373e-05, 1.280745624085021e-05)
+                    is: (6.288998349730999e-05, 1.2807456240850209e-05)
+Incorrect
+- Shear centre
+Should be (y, z): (0, -0.11922705644352412)
+              is: (0, array([-0.15487085]))
+Incorrect
+- Torsional constant
+Should be: 0.00024311681258111343
+0.0011 0.0029
+       is: [1.66313927e-05]
+0.0011 0.0029
+Incorrect
+
+
+#####     Running test on B737     #####
+- Stringer coordinates
+Correct.
+- Cross-sectional area
+Should be: 0.0027704789467391617
+       is: 0.06800942890838887
+Incorrect
+- Centroid position
+Should be (y, z): (0.0, -0.2416466303511318)
+              is: (0, -0.2416466303511318)
+Correct.
+Correct.
+- Moment of Inertia position
+Should be (I_yy, I_zz): (8.954404784883145e-05, 1.0642752968134631e-05)
+                    is: (8.311164699427449e-05, 1.0642752968134636e-05)
+Incorrect
+- Shear centre
+Should be (y, z): (0, -0.10834219430517074)
+              is: (0, array([-0.21113295]))
+Incorrect
+- Torsional constant
+Should be: 0.00022293131689593327
+0.0011 0.0028
+       is: [1.51014984e-05]
+0.0011 0.0028
+Incorrect
+
+
+#####     Running test on CRJ700     #####
+- Stringer coordinates
+Correct.
+- Cross-sectional area
+Should be: 0.0022791886520793156
+       is: 0.046136840816161116
+Incorrect
+- Centroid position
+Should be (y, z): (0.0, -0.19595905064248173)
+              is: (0, -0.19595905064248173)
+Correct.
+Correct.
+- Moment of Inertia position
+Should be (I_yy, I_zz): (4.717344573387326e-05, 6.270784865707143e-06)
+                    is: (4.3569845814526554e-05, 6.270784865707141e-06)
+Incorrect
+- Shear centre
+Should be (y, z): (0, -0.09142274223537021)
+              is: (0, array([-0.15430406]))
+Incorrect
+- Torsional constant
+Should be: 0.0001878286061061396
+0.0011 0.0025
+       is: [8.62997158e-06]
+0.0011 0.0025
+Incorrect
+
+
+#####     Running test on Do228     #####
+- Stringer coordinates
+Correct.
+- Cross-sectional area
+Should be: 0.002794534359156371
+       is: 0.07263656432079835
+Incorrect
+- Centroid position
+Should be (y, z): (0.0, -0.21011089923358023)
+              is: (0, -0.21011089923358015)
+Correct.
+Incorrect
+- Moment of Inertia position
+Should be (I_yy, I_zz): (6.231458098479158e-05, 1.6161179097413905e-05)
+                    is: (5.648879976368327e-05, 1.6161179097413905e-05)
+Incorrect
+- Shear centre
+Should be (y, z): (0, -0.13108425184061262)
+              is: (0, array([-0.11034503]))
+Incorrect
+- Torsional constant
+Should be: 0.0002656923628031168
+0.0011 0.0022
+       is: [1.9193312e-05]
+0.0011 0.0022
+Incorrect
+
+
+#####     Running test on Fokker100     #####
+- Stringer coordinates
+Correct.
+- Cross-sectional area
+Should be: 0.0022271318843290065
+       is: 0.04435140289671263
+Incorrect
+- Centroid position
+Should be (y, z): (0.0, -0.2065355019291737)
+              is: (0, -0.2065355019291736)
+Correct.
+Incorrect
+- Moment of Inertia position
+Should be (I_yy, I_zz): (5.1342473816015615e-05, 5.2644068076863455e-06)
+                    is: (4.77488109459589e-05, 5.2644068076863455e-06)
+Incorrect
+- Shear centre
+Should be (y, z): (0, -0.08500516192069422)
+              is: (0, array([-0.17908627]))
+Incorrect
+- Torsional constant
+Should be: 0.00017531714118864135
+0.0011 0.0024
+       is: [7.74854856e-06]
+0.0011 0.0024
+Incorrect
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.129s
+
+OK
