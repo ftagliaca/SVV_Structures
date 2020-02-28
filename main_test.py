@@ -134,30 +134,30 @@ class GeometricalProperties(TestCase):
             
             print("- Stringer coordinates")
             print("!!TODO: Compare automatically!!")
-            print(f"Should be: {self.crosssection.stcoord[:,::-1]}")
-            print(f"       is: {self.aileron.stringersPosition()}")
-            
-            self.assertAlmostEqual((self.crosssection.stcoord[:,::-1] - self.aileron.stringersPosition()).sum(), 0, delta=1e-6, msg="Stringer positions are not correct.")
+            self.assertAlmostEqual((self.crosssection.stcoord[:,::-1] - self.aileron.stringersPosition()).sum(), 0, delta=1e-6,
+                                    msg=f"Stringer positions are not correct.\nShould be: {self.crosssection.stcoord[:,::-1]}\n       is: {self.aileron.stringersPosition()}")
             
             print("- Cross-sectional area")
-            print(f"Should be: {self.crosssection.totarea}")
-            print(f"       is: {self.aileron.crossArea()}")
+            print(f)
             
-            self.assertEqual(self.crosssection.totarea, self.aileron.crossArea(), msg="Cross-sectional area is not correct.")
+            self.assertEqual(self.crosssection.totarea, self.aileron.crossArea(),
+                             msg=f"Cross-sectional area is not correct.\nShould be: {self.crosssection.totarea}\n       is: {self.aileron.crossArea()}")
             
             print("- Centroid position")
-            print(f"Should be (y, z): {self.crosssection.yc, self.crosssection.zc}")
-            print(f"              is: {0, self.aileron.zCentroid()}")
+            print(f"\nShould be (y, z): {self.crosssection.yc, self.crosssection.zc}\n              is: {0, self.aileron.zCentroid()}")
             
-            self.assertEqual(self.crosssection.yc, 0, msg="Centroid y position not correct.")
-            self.assertEqual(self.crosssection.zc, self.aileron.zCentroid(), msg="Centroid z position not correct.")
+            self.assertEqual(self.crosssection.yc, 0,
+                             msg=f"Centroid y position not correct.\nShould be: {self.crosssection.yc}\n       is: {0}")
+            self.assertEqual(self.crosssection.zc, self.aileron.zCentroid(),
+                             msg=f"Centroid z position not correct.\nShould be: {self.crosssection.zc}\n       is: {self.aileron.zCentroid()}")
             
             print("- Moment of Inertia position")
             print("!!TODO: Compare automatically!!")
-            print(f"Should be (I_yy, I_zz): {self.crosssection.Iyy, self.crosssection.Izz}")
-            print(f"                    is: {self.aileron.momInertia()}")
+            print(f"Should be (I_yy, I_zz): {self.crosssection.Iyy, self.crosssection.Izz}\n                    is: {self.aileron.momInertia()}")
             
-            self.assertEqual((self.crosssection.Iyy, self.crosssection.Izz), self.aileron.momInertia(), msg="MoI is not correct.")
+            self.assertEqual((self.crosssection.Iyy, self.crosssection.Izz), self.aileron.momInertia(), msg=f"MoI is not correct.\nShould be (I_yy, I_zz): {self.crosssection.Iyy, self.crosssection.Izz}\n                    is: {self.aileron.momInertia()}")
+            
+            continue
             
             print("- Shear centre")
             print("!!TODO: Compare automatically!!")
