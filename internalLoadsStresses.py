@@ -3,7 +3,7 @@ import numpy as np
 from tools import macaulay, integrate2D, solveInternal
 from aileronProperties import Aileron
 from aero_loads import AerodynamicLoad
-from test import FiveIntegral
+from test import FiveIntegral, TripleIntegralZSC
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 
@@ -92,12 +92,16 @@ def S_z(x, aileron = A320):
 
 def phi(x, aileron = A320):
     z_hat = -0.215
+    J = 0.00024311681258111343
     T = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
 
     phi_tot  = cF[11]*macaulay(x, aileron.x_I)*T
-    phi_tot += -aileron.P*macaulay(x, x_II)*T
-    phi_tot += -integrate2D(q, aileron.C_a, 0, 0, x, 10, 10, p=2)
-    phi_tot *= (1/aileron.G*aileron.J)
+    phi_tot += -aileron.P*macaulay(x, aileron.x_II)*T
+    phi_tot += -cF[5]*macaulay(x, aileron.x_1)*(z_hat+aileron.r)
+    phi_tot += -cF[7]*macaulay(x, aileron.x_2)*(z_hat+aileron.r)
+    phi_tot += -cF[9]*macaulay(x, aileron.x_3)*(z_hat+aileron.r)
+    phi_tot += -TripleIntegralZSC(x, z_hat)
+    phi_tot *= (1/aileron.G*J)
     phi_tot += cF[4]
 
     return phi_tot
