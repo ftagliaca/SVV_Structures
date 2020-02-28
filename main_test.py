@@ -168,6 +168,12 @@ class GeometricalProperties(TestCase):
             self.assertEqual(self.crosssection.J, -1, msg="MoI is not correct.")
         
 
+    def assertAlmostEqual(self, first, second, places=None, msg=None, delta=None):
+        try:
+            super().assertEqual(first, second, places=None, msg=None, delta=None)
+            print("Correct.")
+        except AssertionError:
+            print("Incorrect")
 
     def assertEqual(self, first, second, msg=None):
         """Fail if the two objects are unequal as determined by the '=='
