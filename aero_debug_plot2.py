@@ -46,6 +46,8 @@ data = np.genfromtxt('aerodynamicloada320.dat', delimiter=',') * 1e3
 print("data:", data.shape)
 n_z, n_x = data.shape
 
+print("avergae:", np.average(data))
+
 Z, X = np.meshgrid(A320.z_i(np.arange(n_z) + 1), A320.x_i(np.arange(n_x) + 1), indexing='ij')
 print("n_z", n_z, "n_x", n_x)
 
