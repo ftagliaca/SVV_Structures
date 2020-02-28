@@ -1,5 +1,5 @@
 from aileronProperties import Aileron
-from internalLoadsStresses import solveInternal, v, w
+from internalLoadsStresses import solveInternal, v, w, phi
 from aero_loads import AerodynamicLoad
 import numpy as np
 from matplotlib import pyplot as plt
@@ -15,21 +15,27 @@ A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5
 # print(_)
 # _ = A320.momInertia()
 # print(_)
-
-X = np.linspace(0, A320.l_a, 10)
-V_p = np.zeros(10)
-W_p = np.zeros(10)
+n = 100
+X = np.linspace(0, A320.l_a, n)
+V_p = np.zeros(n)
+W_p = np.zeros(n)
+P_p = np.zeros(n)
 for i,x in enumerate(X):
     V_p[i] = v(x)
     W_p[i] = w(x)
+    P_p[i] = phi(x)
 
 V = V_p*np.cos(A320.theta) + W_p*np.sin(A320.theta)
 W = W_p*np.cos(A320.theta) + V_p*np.sin(A320.theta)
+W = W*-1
 
-plt.subplot(121)
+
+plt.subplot(131)
 plt.plot(X,V)
-plt.subplot(122)
+plt.subplot(132)
 plt.plot(X,W)
+plt.subplot(133)
+plt.plot(X,P_p)
 
 plt.show()
 

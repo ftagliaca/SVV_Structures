@@ -110,9 +110,9 @@ def solveInternal(alr: Aileron, q):
                    [0]],dtype='float')
     '''
     A = np.matrix([[x_1,1,0,0,z_hat+r,0,0,0,0,0,0,0],#v_1+p_1*(z+r) = d_1cos(theta)
-                   [0,0,-x_1,-1,-r,0,0,0,0,0,0,0], #w_1-p_1*r = -d_1sin(theta)
+                   [0,0,x_1,1,-r,0,0,0,0,0,0,0], #w_1-p_1*r = -d_1sin(theta)
                    [x_2,1,0,0,z_hat+r,-(x_2-x_1)**3/(6*E*I_zz)-(z_hat+r)**2*(x_2-x_1)/(G*J),0,0,0,0,0,-sin(theta)*(x_2-x_I)**3/(6*E*I_zz)-T*(x_2-x_I)/(G*J)*(z_hat+r)],#v_2+p_2*(z+r) = 0
-                   [0,0,-x_2,-1,-r,r*(z_hat+r)*(x_2-x_1)/(G*J),(x_2-x_1)**3/6*E*I_yy,0,0,0,0,cos(theta)*(x_2-x_I)**3/(6*E*I_yy)+r*T*(x_2-x_I)/(G*J)], #w_2-p_2*r = 0
+                   [0,0,x_2,1,-r,r*(z_hat+r)*(x_2-x_1)/(G*J),(x_2-x_1)**3/6*E*I_yy,0,0,0,0,cos(theta)*(x_2-x_I)**3/(6*E*I_yy)+r*T*(x_2-x_I)/(G*J)], #w_2-p_2*r = 0
                    [x_3,1,0,0,z_hat+r,-(x_3-x_1)**3/(6*E*I_zz)-(z_hat+r)**2*(x_3-x_1)/(G*J),0,-(x_3-x_2)**3/(6*E*I_zz)-(z_hat+r)**2*(x_3-x_2)/(G*J),0,0,0,-sin(theta)*(x_3-x_I)**3/(6*E*I_zz)-T*(x_3-x_I)/(G*J)*(z_hat+r)], #v_3+p_3*(z+r) = d_3cos(theta)
                    [0,0,x_3,1,-r,r*(z_hat+r)*(x_3-x_1)/(G*J),(x_3-x_1)**3/6*E*I_yy,r*(z_hat+r)*(x_3-x_2)/(G*J),(x_3-x_2)**3/6*E*I_yy,0,0,cos(theta)*(x_3-x_I)**3/(6*E*I_yy)+r*T*(x_3-x_I)/(G*J)], #w_3-p_3*r = -d_3sin(theta)
                    [x_I*sin(theta),sin(theta),x_I*cos(theta),cos(theta),(z_hat+r)*sin(theta)-r*cos(theta),-sin(theta)*((x_I-x_1)**3/(6*E*I_zz)+(x_I-x_1)*(z_hat+r)**2/(G*J))+cos(theta)*r*(z_hat+r)/(G*J),cos(theta)*(x_I-x_1)**3/(6*E*I_yy),0,0,0,0,0],#sin(theta)*(v_I+p_I*(z+r))+cos(theta)*(w_I-p_I*r) = 0
