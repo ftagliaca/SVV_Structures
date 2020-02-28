@@ -17,7 +17,7 @@ except OSError as e:
 
 cF = solveInternal(A320, q)
 
-def normalStress(y, z, x, M_z = M_z, M_y = M_y, Aileron = A320):
+def normalStress(y, z, x, M_z , M_y , Aileron = A320):
     '''
     Input:
 
