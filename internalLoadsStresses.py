@@ -93,15 +93,15 @@ def S_z(x, aileron = A320):
 def phi(x, aileron = A320):
     z_hat = -0.215
     J = 0.00024311681258111343
-    T = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
+    T = cos(aileron.theta)*aileron.r+sin(aileron.theta)*z_hat
 
     phi_tot  = cF[11]*macaulay(x, aileron.x_I)*T
     phi_tot += -aileron.P*macaulay(x, aileron.x_II)*T
     phi_tot += -cF[5]*macaulay(x, aileron.x_1)*(z_hat+aileron.r)
     phi_tot += -cF[7]*macaulay(x, aileron.x_2)*(z_hat+aileron.r)
     phi_tot += -cF[9]*macaulay(x, aileron.x_3)*(z_hat+aileron.r)
-    phi_tot += -TripleIntegralZSC(x, z_hat)
-    phi_tot *= (1/aileron.G*J)
+    phi_tot += -TripleIntegralZSC(x, z_hat+aileron.r)
+    phi_tot *= -1/(aileron.G*J)
     phi_tot += cF[4]
 
     return phi_tot

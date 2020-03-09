@@ -4,6 +4,7 @@ from aero_loads import AerodynamicLoad
 import numpy as np
 from matplotlib import pyplot as plt
 import time
+from math import cos, sin
 
 t0 = time.time()
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
@@ -21,11 +22,12 @@ V_p = np.zeros(n)
 W_p = np.zeros(n)
 P_p = np.zeros(n)
 for i,x in enumerate(X):
-    V_p[i] = v(x)
-    W_p[i] = w(x)
     P_p[i] = phi(x)
+    V_p[i] = v(x) + P_p[i]*(-0.24023+A320.r)
+    W_p[i] = w(x) - P_p[i]*A320.r
 
-V = V_p*np.cos(A320.theta) + W_p*np.sin(A320.theta)
+
+V = V_p*np.cos(A320.theta) - W_p*np.sin(A320.theta)
 W = W_p*np.cos(A320.theta) + V_p*np.sin(A320.theta)
 W = W*-1
 
@@ -33,9 +35,9 @@ X_I = np.linspace(0, A320.l_a, 50)
 W_I = np.load("verification_data/defy.npy")
 V_I = np.load("verification_data/defx.npy")
 P_I = np.load("verification_data/defz.npy")
-print(X_I)
-print(V_I)
-print(W_I)
+#print(X_I)
+#print(V_I)
+#print(W_I)
 
 plt.subplot(221)
 plt.plot(X,V)
