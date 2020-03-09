@@ -1,6 +1,8 @@
-import math
-import numpy as np
+from aero_loads import AerodynamicLoad
 from matplotlib import pyplot as plt
+import os
+import numpy as np
+import math
 
 class Aileron():
     def __init__(self, C_a, l_a, x_1, x_2, x_3, x_a, h, t_sk, t_sp, t_st, h_st, w_st, n_st, d_1, d_3, theta, P):
@@ -25,7 +27,7 @@ class Aileron():
         self.x_I = self.x_2 - 0.5*self.x_a
         self.x_II = self.x_2 + 0.5*self.x_a
 
-        #Material properties obtianed from http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T3
+        #Material properties obtained from http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T3
 
         self.E = 73.1e9
         self.G = 28e9
@@ -229,6 +231,29 @@ class Aileron():
         x_i = 0.5 * (0.5 * self.l_a * (1 - np.cos(theta)) + 0.5 * self.l_a * (1 - np.cos(theta_1)))
 
         return x_i
+
+def interpolate_grid(self):
+    source_data_file = 'data/aerodynamicloada320.dat'
+    interpolated_data_file = 'data/a320_interpolated_loading.npy'
+
+    if os.path.exists(interpolated_data_file):
+        self.aero_loads = np.load(interpolated_data_file)
+    else:
+        n_x = 41 * 10
+        n_z = 81 * 10
+
+        x = self.x_i(np.arange(n_x) + 1, N_x=n_x)
+
+        for x_val in [self.x_1, self.x_2, self.x_3, self.x_a, self.x_I, self.x_II]:
+            idx = x.searchsorted(x_val)
+            x = np.concatenate((x[:idx], [x_val], x[idx:]))
+        
+        z = self.z_i(np.arange(n_z) + 1, N_x=n_z)
+
+        self.aero_loads = AerodynamicLoad(self, filename=source_data_file).get_values_grid(z, x)
+        np.save(interpolated_data_file, self.aero_loads)
+
+
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 A320.stringersPosition()
