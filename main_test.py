@@ -3,9 +3,6 @@ from aileronProperties import Aileron
 from unittest import TestCase
 import unittest
 import numpy as np
-import Energy
-import Stiffness
-import Stress
 import math as m
 from shearCenterBuild import get_shear_center, torsional_stiffness
 
@@ -120,10 +117,10 @@ class GeometricalProperties(TestCase):
         self.theta = m.radians(self.theta)
         self.P   *= 1e3  # kN to N
         
-        self.crosssection = Stiffness.Crosssection(self.nst, self.Ca, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst)
-        self.crosssection.compute_bending_properties()   # Run the calculations
-        self.crosssection.compute_shearcenter()   # Run the calculations
-        self.crosssection.compute_torsionalstiffness()   # Run the calculations
+        # self.crosssection = Stiffness.Crosssection(self.nst, self.Ca, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst)
+        # self.crosssection.compute_bending_properties()   # Run the calculations
+        # self.crosssection.compute_shearcenter()   # Run the calculations
+        # self.crosssection.compute_torsionalstiffness()   # Run the calculations
         
 
     
