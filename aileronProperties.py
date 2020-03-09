@@ -21,6 +21,7 @@ class Aileron():
         self.d_3 = d_3*0.01 #m
         self.theta = math.radians(theta) #rad
         self.P = P*1000 #N
+        self.d_st = 0 # distance between stringers (INIT)
 
         self.x_I = self.x_2 - 0.5*self.x_a
         self.x_II = self.x_2 + 0.5*self.x_a
@@ -71,6 +72,7 @@ class Aileron():
                 self.st_pos[i,0] = - self.st_pos[int(self.n_st) - i,0]
                 self.st_pos[i,1] = self.st_pos[int(self.n_st) - i,1]
 
+        self.d_st = d_st
         return self.st_pos
 
 
