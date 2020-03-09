@@ -35,7 +35,7 @@ class Aileron():
         self.stringersPosition()
         self.zCentroid()
         self.momInertia()
-        self.interpolate_grid()
+
 
     def stringersPosition(self):
         '''
@@ -232,27 +232,7 @@ class Aileron():
         x_i = 0.5 * (0.5 * self.l_a * (1 - np.cos(theta)) + 0.5 * self.l_a * (1 - np.cos(theta_1)))
 
         return x_i
-
-    def interpolate_grid(self):
-        source_data_file = 'data/aerodynamicloada320.dat'
-        interpolated_data_file = 'data/a320_interpolated_loading.npy'
-
-        if os.path.exists(interpolated_data_file):
-            self.aero_loads = np.load(interpolated_data_file)
-        else:
-            n_x = 41 * 10
-            n_z = 81 * 10
-
-            x = self.x_i(np.arange(n_x) + 1, N_x=n_x)
-
-            for x_val in [self.x_1, self.x_2, self.x_3, self.x_a, self.x_I, self.x_II]:
-                idx = x.searchsorted(x_val)
-                x = np.concatenate((x[:idx], [x_val], x[idx:]))
-            
-            z = self.z_i(np.arange(n_z) + 1, N_x=n_z)
-
-            self.aero_loads = AerodynamicLoad(self, filename=source_data_file).get_values_grid(z, x)
-            np.save(interpolated_data_file, self.aero_loads)
+        
 
 
 

@@ -1,6 +1,7 @@
 from typing import Tuple, Optional, List, Union, IO
 from aileronProperties import Aileron
 import numpy as np
+import os
 
 # http://fourier.eng.hmc.edu/e176/lectures/ch7/node7.html
 # https://en.wikipedia.org/wiki/Bicubic_interpolation
@@ -18,6 +19,8 @@ class AerodynamicLoad:
         Returns:
             AerodynamicLoad: The load object.
         """
+
+        self.aileron = aileron
 
         self.z_i, self.x_i = aileron.z_i, aileron.x_i # [] -> [m]
 
@@ -364,3 +367,34 @@ class AerodynamicLoad:
         result = [tiles[i].get_value_at(z[i], x[i]) for i, _ in enumerate(z)]
 
         return np.array(result, dtype='float')
+
+
+    def interpolate_predefined_grid(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Interpolates the values on the predefined grid for later use.
+
+        Args:
+            
+        Returns:
+            np.ndarray, np.ndarray, np.ndarray: grid z values, grid x values, aerodynamic loads in grid
+        """
+        source_data_file = 'data/aerodynamicloada320.dat'
+        interpolated_data_file = 'data/a320_interpolated_loading.npy'
+
+        n_x = 41 * 10
+        n_z = 81 * 10
+
+        self._grid_x = self.x_i(np.arange(n_x) + 1, N_x=n_x)
+
+        for x_val in [self.aileron.x_1, self.aileron.x_2, self.aileron.x_3, self.aileron.x_a, self.aileron.x_I, self.aileron.x_II]:
+            idx = self._grid_x.searchsorted(x_val)
+            self._grid_x = np.concatenate((self._grid_x[:idx], [x_val], self._grid_x[idx:]))
+        
+        self._grid_z = self.z_i(np.arange(n_z) + 1, N_z=n_z)
+
+        if os.path.exists(interpolated_data_file):
+            self._grid_aero_loads = np.load(interpolated_data_file)
+        else:
+            self._grid_aero_loads = AerodynamicLoad(self, filename=source_data_file).get_values_grid(self._grid_z, self._grid_x)
+            np.save(interpolated_data_file, self._grid_aero_loads)
+        
+        return self._grid_z, self._grid_x, self._grid_aero_loads
