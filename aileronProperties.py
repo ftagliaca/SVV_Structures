@@ -1,4 +1,3 @@
-from aero_loads import AerodynamicLoad
 from matplotlib import pyplot as plt
 import os
 import numpy as np
