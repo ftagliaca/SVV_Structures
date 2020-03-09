@@ -35,6 +35,7 @@ class Aileron():
         self.stringersPosition()
         self.zCentroid()
         self.momInertia()
+        self.interpolate_grid()
 
     def stringersPosition(self):
         '''
