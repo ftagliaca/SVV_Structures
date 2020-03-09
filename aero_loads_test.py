@@ -57,7 +57,7 @@ class AeroLoadsTest(TestCase):
         
         data_interpolation = aero_loads.get_values_grid(interp_x, interp_y)
 
-        error = np.average(np.abs(data_verification - data_interpolation))
+        error = np.abs(np.average(data_verification - data_interpolation))
         print(f"average error: {error}")
 
         fig = plt.figure(label)
