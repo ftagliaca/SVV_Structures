@@ -34,7 +34,7 @@ _ = A320.zCentroid()
 _ = A320.momInertia()
 
 
-def shear_calc_env(aircraft_class, szy_list, ):
+def shear_calc_env(aircraft_class, szy_list, mesh_size=10):
     # another instance of quality of life variable naming at a cost of absolute dumbness...
     h_spar = aircraft_class.h  # height of aileron in y direction, also the length of the spar
     l_sk = aircraft_class.l_s  # length of straight skin section
@@ -43,13 +43,29 @@ def shear_calc_env(aircraft_class, szy_list, ):
     radius = h_spar / 2  # half the length of the spar
     t_spar = aircraft_class.t_sp  # thickness of spar
     t_skin = aircraft_class.t_sk  # thickness of skin
-    n_st = aircraft_class.n_st
+    n_st = aircraft_class.n_st  # number of stringers
+    d_ip = (m.pi * radius) / 2 - aircraft_class.d_st  # intermediate distance between spar and stringer before spar(cell 1)
+    d_st = aircraft_class.d_st  # distance between stringers on perimeter
+    d_i = d_st - d_ip   # intermediate distance between spar and stringer after spar (in cell 2)
+
+    # check for stringers that are fore/aft of spar
+    # strs_cell_placement is whether the stringers are in cell 1 (idx 0) or cell 2 (idx 1)
+    strs_zcoords = aircraft_class.st_pos[:, 1]
+    strs_cell_placement = np.where(abs(strs_zcoords) < radius, 0, 1)
+    # strs_cell_placement is whether the stringers are above (idx 1) or below (idx -1) z-axis
+    strs_topdown_placement = np.where(aircraft_class.st_pos[:, 0] < 0, -1, 1)
+    # print(strs_cell_placement)
+    # print(strs_zcoords)
+    # print(strs_topdown_placement)
+    # print(aircraft_class.st_pos)
+
+    # exit()
 
     def get_constants(szys):
         """
         Step for calculating the constants Lambda = - Sz / Iyy and Lambda = - Sy / Izz. Note Lambda is arbitrarily set \
         during the derivation phase, not equivalent to anything in literature.
-        :param szy_list: list of size 2 of the shear forces in z and y direction respectively.
+        :param szys: list of size 2 of the shear forces in z and y direction respectively.
         : param aircraft_class: Using the MoI values calculated from the aileronProperties section.
         :return: tuple containing both Lambdas (Lambda_z, Lambda_y)
         """
@@ -59,20 +75,21 @@ def shear_calc_env(aircraft_class, szy_list, ):
 
         return np.array([const_z, const_y])
 
-    def get_idealised_shear_contribution(aircraft_class):
+    def get_idealised_shear_contribution():
         """
         Get the summed carried shear flows on the booms per wall. This is used in the subsequent base
         shear flow calculation (get_shear_flow_base_v1).
-        :param aircraft_class:
         :return:
         """
         n_str = aircraft_class.n_st
-
+        # looking at the stringer positions and the radius of the front part, it means there's 1 more
+        # stringer in the front (5 total) and 6 at the trailing edge.
         # expressing the stringer position coordinates relative to centroid z-position
         str_pos_mat = aircraft_class.st_pos - np.hstack((np.zeros((n_str, 1)), z_bar * np.ones((n_str, 1))))
         # since leading edge stringer Area is halved, another instance of LE stringer is cloned to the end of array
         str_pos_mat = np.vstack((str_pos_mat, str_pos_mat[0]))
         # print('stringer positions wrt centroid: \n',str_pos_mat)
+        print('converted stringer positions', str_pos_mat)
 
         # creating a matrix of stringer areas for multiplication. Note that stringer on LE is halved since it's
         # 'shared'(a cut is made on the y=0 section of that point)
@@ -82,18 +99,11 @@ def shear_calc_env(aircraft_class, szy_list, ):
 
         # multiply the areas matrix with the stringer coordinates matrix before summation. array is A*[ycoord, zcoord]
         ay_az_mat = np.multiply(str_pos_mat, a_stiff_mat)
-        # print('stringer areas matrix:\n', ay_az_mat)  # turn on for debug
+        print('stringer areas matrix:\n', ay_az_mat)  # turn on for debug
 
         # note that both the epsilon arrays have the y in first column and the z in 2nd column
         # (inverted from the str_coords)
         return str_pos_mat, ay_az_mat
-
-    def get_shear_flow_base_cell1(mesh_size_quarter_arc=10, mesh_size_spar=10):
-        d_ip = (m.pi * radius) / 2 - aircraft_class.d_st  # intermediate distance between 2nd stringer and spar point
-        return d_ip
-
-    def get_shear_flow_base_cell2(d_ip):
-        return None
 
     def get_shear_flow_base_v1(lambd_array):
         """
@@ -102,13 +112,14 @@ def shear_calc_env(aircraft_class, szy_list, ):
 
         :return:
         """
+
         # eps_izy, eps_yz = get_idealised_shear_contribution(aircraft_class)
-        str_pos, ayaz_mat = get_idealised_shear_contribution(aircraft_class)
+        str_pos, ayaz_mat = get_idealised_shear_contribution()
         n_tr = int((n_st - 3) / 2)  # number of stringers on trailing edge, per skin, must be integer
         # print(n_tr)
-        print(ayaz_mat)
-        eps_yz = np.vstack((np.sum(ayaz_mat[0:2], 0), np.sum(ayaz_mat[2:n_tr+2], 0),
-                            np.sum(ayaz_mat[n_tr+2: n_st-1], 0), np.sum(ayaz_mat[n_st-1:], 0)))
+        # print(ayaz_mat)
+        eps_yz = np.vstack((np.sum(ayaz_mat[0:2], 0), np.sum(ayaz_mat[2:n_tr + 2], 0),
+                            np.sum(ayaz_mat[n_tr + 2: n_st - 1], 0), np.sum(ayaz_mat[n_st - 1:], 0)))
         print(eps_yz)
         # print(str_pos)
         z_tr_i = - z_tr  # z length of the trailing edge section in cross-section(section II), but instantiated for
@@ -133,10 +144,96 @@ def shear_calc_env(aircraft_class, szy_list, ):
 
         return output_array
 
-    def get_shortest_normal(aircraft_class):
+    def get_cumulative_strs_influence(lambd_array, ayaz_mat, order=1):
+
+        # lambd array is in zy format, ayaz_mat is in yz format
+        # order of -1 means the procedure will be done in reverse (bottom-up), done by flipping the array
+        if order == -1:
+            ayaz_mat = np.flip(ayaz_mat, 0)
+
+        # print(ayaz_mat)
+        lambd_ayaz = np.multiply(lambd_array, ayaz_mat)
+        # usage of epsilon denoting the summation method
+        eps_yz = np.empty(ayaz_mat.shape)
+        # print(ayaz_mat.shape)
+        for item in range(ayaz_mat.shape[1]):
+            # sum all items from prior ayaz
+            eps_yz[item] = np.sum((lambd_ayaz[:item + 1]), 0)
+        # print('eps: \n', eps_yz)
+        eps_tot = np.sum(eps_yz, 1)
+        return eps_tot
+
+    def get_shear_flow_base_v2(lambd_array):
+
+        str_pos, ayaz_mat = get_idealised_shear_contribution()
+
+        # qb11 -----------
+        range_11 = np.linspace(0, np.pi / 2, mesh_size)  # range_11 contains radians
+        # print('range_11', range_11)
+        qb11_z = lambd_array[0] * (
+                (radius * t_skin * (range_11 * (radius - z_bar) + np.sin(range_11) * radius)) + ayaz_mat[-1, 1])
+        qb11_y = lambd_array[1] * (radius * radius * t_skin * (np.cos(range_11) - 1) + ayaz_mat[-1, 0])
+        # inputting the stiffener influence (note that there're two stiffeners on the arc, not incl. the LE one)
+        # print(qb11_z)
+        theta_stif = aircraft_class.d_st / radius
+        # print(theta_stif)
+        ayaz_stif11 = ayaz_mat[-3:-1]
+        # print(qb11_z)
+        # print('ayaz_11', ayaz_stif11)
+        lambd_ayaz_stif11 = np.multiply(lambd_array, ayaz_stif11)
+        # print(lambd_ayaz_stif11)
+        # floor divide to get int (number of strs passed)
+        strs_passed = range_11 * radius / aircraft_class.d_st
+        strs_passed = strs_passed.astype(int)
+        # print('strs_passed', strs_passed)
+        eps11_tot = get_cumulative_strs_influence(lambd_array, ayaz_stif11, -1)
+        # print('eps_tot', eps11_tot)
+        qb11_pre_eps = np.add(qb11_z, qb11_y)
+        qb11 = np.where(range_11 < theta_stif, qb11_pre_eps, qb11_pre_eps + eps11_tot[strs_passed - 1])
+        # qb11_z = np.where(range_11 < theta_stif, qb11_z, qb11_z + eps11_yz[strs_passed-1, 1])
+        # qb11_y = np.where(range_11 < theta_stif, qb11_y, qb11_y + eps11_yz[strs_passed-1, 0])
+        # print('qb11_pre', qb11_pre_eps)
+        # print('qb11', qb11)
+        # exit()
+
+        # qb12 -----------
+        range_12 = np.linspace(0, h_spar, mesh_size)  # range_12 is about distances
+        qb12_z = lambd_array[0] * (t_spar * (radius - z_bar) * range_12)
+        qb12_y = lambd_array[1] * t_spar / 2 * (range_12 * range_12 - h_spar * range_12)
+        # print(np.ones(qb11.shape[0]))
+        qb12 = qb12_z + qb12_y + qb11[-1] * np.ones(mesh_size)
+        # print(qb12)
+
+        # qb13 -----------
+        # range_13 is the same as range_11, so range_11 is used here, also in radians
+        qb13_z = lambd_array[0] * (radius * t_skin * (range_11 * (radius - z_bar) + radius * (1 - np.cos(range_11))))
+        qb13_y = lambd_array[1] * (radius * radius * t_skin * (np.sin(range_11)))
+        qb13_proto = np.add(qb13_y, qb13_z)
+        ayaz_stif3 = lambd_array[0] * ayaz_mat[1, 1] + lambd_array[1] * ayaz_mat[1, 0]
+        # print('ayaz', ayaz_stif3)
+        qb13_proto = np.where(range_11 < theta_stif, qb13_proto, qb13_proto + ayaz_stif3)
+        qb13 = qb13_proto + qb12[-1] * np.ones(mesh_size)
+        print(qb13)
+
+        # qb21 -----------
+        # range_21 is similar to range_12, the segment is split up to small segments of a defined mesh size.
+        range_21 = np.linspace(0, l_sk, mesh_size)
+        q21_z = lambd_array[0] * (t_spar * (radius - z_bar) * range_21)
+        q21_y = lambd_array[1] * (t_spar * -range_12 * range_21)
+        # prepare matrix for the stringers' contribution
+        print(radius)
+        print(l_sk, d_ip, d_i, d_st)
+        print(range_21)
+        q21_stif = np.where(range_21 < d_ip, 0, ayaz_mat[n_st - 1, 0])
+        range_21_stif = (range_12 - d_ip) / d_st
+
+        # print(q21_stif)
+        print(range_21_stif)
+        return
+
+    def get_shortest_normal():
         '''
         Solves for the shortest distance from the trailing edge skin to the centre of spar.
-        :param aircraft_class:
         :return:
         '''
         theta = m.atan(aircraft_class.h / 2 / z_tr)
@@ -146,8 +243,6 @@ def shear_calc_env(aircraft_class, szy_list, ):
         """
         Solves for shear centre, eta. It's measured from the leading edge of the aileron cross-section.
         :param aircraft_class:
-        :param szys: list of [Sz, Sy]. Remember to set sc_calc to False if you want flows
-        :param sc_calc: Boolean whether to calculate shear center. Default is True.
         :return:
         """
         # Since aileron is symmetric on the z axis, only a shear of S_y = 1 is applied.
@@ -183,7 +278,7 @@ def shear_calc_env(aircraft_class, szy_list, ):
 
         c_matrix = get_sc_twist().flatten()
         print('c_matrix: ', c_matrix)
-        d = get_shortest_normal(aircraft_class)
+        d = get_shortest_normal()
 
         a_i = aircraft_class.A1
         a_ii = aircraft_class.A2
@@ -210,7 +305,7 @@ def shear_calc_env(aircraft_class, szy_list, ):
         q_base = get_shear_flow_base_v1(lambds)
 
         # get shortest distance perpendicular to the line
-        d = get_shortest_normal(aircraft_class)
+        d = get_shortest_normal()
 
         # preparing terms from moment equation.
         mom_known = (q_base[0, 0] + q_base[0, 2]) * (1 / 2 * m.pi * radius * radius) + (
@@ -384,7 +479,7 @@ def shear_calc_env(aircraft_class, szy_list, ):
 
     # get_idealised_shear_contribution(A320)
     # mesh_points, szy_outputs, qtot = get_shear_analysis(A320)
-    mesh_size = 200
+    # mesh_size = 200
     x = np.linspace(0, A320.l_a, num=mesh_size)  # Subsequent functions accept numpy-arrays
     # x = [0, 0.5, 0.6, 2.7]
     # y = veri.aileron.Sy(x)
@@ -435,8 +530,9 @@ def shear_calc_env(aircraft_class, szy_list, ):
 
     # z_plot = q_tot.flatten()
     # print(get_idealised_shear_contribution(A320))
-    print("z-coord of centroid:", z_bar)
-    print("Shear center z_coordinate", float(get_shear_center(aircraft_class)))
+    # print("z-coord of centroid:", z_bar)
+    # print("Shear center z_coordinate", float(get_shear_center(aircraft_class)))
+    get_shear_flow_base_v2([1, 1])
 
 
 shear_calc_env(A320, [0, 0])
