@@ -144,7 +144,7 @@ class Aileron():
 
         dz_stif = (self.Q_stiff)/(self.n_st * A_stif)
 
-        I_yy = A_halfcircle * dz_halfcircle**2 + A_skin * dz_skin**2 + A_spar * dz_spar**2
+        I_yy = A_halfcircle*2*dz_halfcircle**2 + A_skin * dz_skin**2 + A_spar * dz_spar**2
 
         #I_zz calculations
         dy_halfcircle = 0
@@ -158,7 +158,7 @@ class Aileron():
             dz_st = self.st_pos[i,1]+zCentroid
             dy_st = self.st_pos[i,0]
 
-            I_yy += A_stif * dz_st**2
+            I_yy += A_stif *dz_st**2
             I_zz += A_stif * dy_st**2
 
 
@@ -172,14 +172,14 @@ class Aileron():
         #I_yyspar = self.h * self.t_sp**3 / 12
         #I_yyspar is 0, thinwalled assumption.
 
-        I_yyhc = I_zzhc = 0.5*math.pi*self.t_sk*r**3
-
+        I_yyhc = 1/16*math.pi*self.h**3 *self.t_sk+ (0.5*math.pi*self.h*self.t_sk)*(self.h/math.pi)**2
+        I_zzhc = 1/16*math.pi*self.h**3 *self.t_sk 
         I_zztot = I_zz + 2*I_zzskin + I_zzhc + I_zzspar
         I_yytot = I_yy + 2*I_yyskin + I_yyhc
 
         self.Izz = I_zztot
         self.Iyy = I_yytot
-
+        print("Iyy =" , I_yytot, "Izz = " , I_zztot )
         return(I_yytot, I_zztot)
 
     def torsionalStiffness(self):
