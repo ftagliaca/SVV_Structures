@@ -1,4 +1,3 @@
-from aero_loads import AerodynamicLoad
 from matplotlib import pyplot as plt
 import os
 import numpy as np
@@ -232,7 +231,7 @@ class Aileron():
         x_i = 0.5 * (0.5 * self.l_a * (1 - np.cos(theta)) + 0.5 * self.l_a * (1 - np.cos(theta_1)))
 
         return x_i
-        
+
 
 
 
