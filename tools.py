@@ -98,7 +98,7 @@ def solveInternal(alr: Aileron):
                    [-d_1*sin(theta)],
                    [-Integral(x_2,5)/(6*E*I_zz)+(z_hat+r)*IntegralShear(x_2,z_hat+r, 3)/(G*J)],
                    [0],
-                   [d_3*cos(theta)-Integral(x_3,5)/(6*E*I_zz)+(z_hat+r)*IntegralShear(x_3,z_hat+r, 3)/(G*J)+P*(sin(theta)*(x_3-x_II)**3/(6*E*I_zz)+T*(z_hat+r)*(x_3-x_II)/(G*J))],
+                   [d_3*cos(theta)-Integral(x_3,5)/(6*E*I_zz)+(z_hat+r)*IntegralShear(x_3,z_hat+r, 3)/(G*J)+P*(sin(theta)*(x_3-x_II)**3/(6*E*I_zz)-T*(z_hat+r)*(x_3-x_II)/(G*J))],
                    [-d_3*sin(theta)-P*cos(theta)*(x_3-x_II)**3/(6*E*I_yy)],
                    [-sin(theta)*(z_hat+r)/(G*J)*IntegralShear(x_I,z_hat+r, 3)-Integral(x_I,5)*sin(theta)*(z_hat+r)/(6*E*I_zz)],
                    [P*sin(theta)+Integral(l_a,2)],
