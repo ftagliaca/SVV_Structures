@@ -2,7 +2,7 @@ import numpy as np
 from math import cos, sin, tan
 from aileronProperties import Aileron
 from math import cos, sin, sqrt, tan
-from integrals import TripleIntegralZSC, DoubleIntegralZSC, Integral
+from integrals import Integral, IntegralShear
 import sympy
 
 def macaulay(x,x1):
@@ -94,18 +94,18 @@ def solveInternal(alr: Aileron):
                    [0.0037654882662205846]],dtype='float')
                    #[-P*T-DoubleIntegralZSC(l_a,z_hat+r)]],dtype='float')
     '''
-    b = np.matrix([[d_1*cos(theta)-Integral(x_1,5)/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_1,z_hat+r)/(G*J)],
+    b = np.matrix([[d_1*cos(theta)-Integral(x_1,5)/(6*E*I_zz)+(z_hat+r)*IntegralShear(x_1,z_hat+r, 3)/(G*J)],
                    [-d_1*sin(theta)],
-                   [-Integral(x_2,5)/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_2,z_hat+r)/(G*J)],
+                   [-Integral(x_2,5)/(6*E*I_zz)+(z_hat+r)*IntegralShear(x_2,z_hat+r, 3)/(G*J)],
                    [0],
-                   [d_3*cos(theta)-Integral(x_3,5)/(6*E*I_zz)-(z_hat+r)*TripleIntegralZSC(x_3,z_hat+r)/(G*J)-P*(sin(theta)*(x_3-x_II)**3/(6*E*I_zz)+T*(z_hat+r)*(x_3-x_II)/(G*J))],
+                   [d_3*cos(theta)-Integral(x_3,5)/(6*E*I_zz)+(z_hat+r)*IntegralShear(x_3,z_hat+r, 3)/(G*J)+P*(sin(theta)*(x_3-x_II)**3/(6*E*I_zz)+T*(z_hat+r)*(x_3-x_II)/(G*J))],
                    [-d_3*sin(theta)-P*cos(theta)*(x_3-x_II)**3/(6*E*I_yy)],
-                   [-(z_hat+r)/(G*J)*TripleIntegralZSC(x_I,z_hat+r)-Integral(x_I,5)*sin(theta)*(z_hat+r)/(6*E*I_zz)],
+                   [-sin(theta)*(z_hat+r)/(G*J)*IntegralShear(x_I,z_hat+r, 3)-Integral(x_I,5)*sin(theta)*(z_hat+r)/(6*E*I_zz)],
                    [P*sin(theta)+Integral(l_a,2)],
                    [-P*cos(theta)],
                    [P*sin(theta)*(l_a-x_II)+Integral(l_a,3)],
                    [P*cos(theta)*(l_a-x_II)],
-                   [-P*T-DoubleIntegralZSC(l_a,z_hat+r)]],dtype='float')
+                   [-P*T-IntegralShear(l_a,z_hat+r, 2)]],dtype='float')
     #'''
     x = np.linalg.solve(A,b)
     header = 'C1, C2, C3, C4, C5, F_1y, F_1z, F_2y, F_2z, F_3y, F_3z, P_I'

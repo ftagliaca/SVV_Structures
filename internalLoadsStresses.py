@@ -2,7 +2,7 @@ from math import sqrt, cos, sin, tan
 import numpy as np
 from tools import macaulay, solveInternal
 from aileronProperties import Aileron
-from integrals import TripleIntegralZSC, DoubleIntegralZSC, Integral
+from integrals import Integral, IntegralShear
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 
@@ -96,7 +96,7 @@ def phi(x, aileron = A320):
     phi_tot += cF[5]*macaulay(x, aileron.x_1)*(z_hat+aileron.r)
     phi_tot += cF[7]*macaulay(x, aileron.x_2)*(z_hat+aileron.r)
     phi_tot += cF[9]*macaulay(x, aileron.x_3)*(z_hat+aileron.r)
-    phi_tot += -TripleIntegralZSC(x, z_hat+aileron.r)
+    phi_tot += -IntegralShear(x, z_hat+aileron.r, 3)
     phi_tot *= 1/(aileron.G*J)
     phi_tot += cF[4]
 
@@ -127,6 +127,6 @@ def T(x, aileron = A320):
     T_c = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
     T_tot  = cF[11]*T_c*macaulay(x, aileron.x_I)**0
     T_tot += -aileron.P*T_c*macaulay(x, aileron.x_II)**0
-    T_tot += -DoubleIntegralZSC(x, z_hat)
+    T_tot += -IntegralShear(x, z_hat+aileron.r, 2)
 
     return T_tot
