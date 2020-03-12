@@ -20,6 +20,7 @@ from aileronProperties import A320
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
+from stress_plotting import colorline
 
 # import of class in order to use geometrical properties
 #
@@ -31,8 +32,12 @@ _ = A320.stringersPosition()
 _ = A320.zCentroid()
 _ = A320.momInertia()
 
+get_shear_centre = None
+get_torsional_stiffness_ = None
 
 def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
+    global get_shear_centre, get_torsional_stiffness_
+
     # mesh_size = 100
     # another instance of quality of life variable naming at a cost of absolute dumbness...
     print('are you ready for a bad time?')
@@ -203,6 +208,23 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
         clb.set_label(' Shear flow [N/m]')
         plt.show()
 
+    def plot_colour_(qb_toplot, qb_y, qb_z):
+        fig, ax = plt.subplots()
+
+        lc = colorline(qb_z, qb_y, z=qb_toplot, cmap='jet')
+        clb = plt.colorbar(lc, orientation='horizontal')
+
+        x_margin = 0.05
+        ax.set_xlim(-x_margin -0.55, x_margin + 0)
+        ax.invert_xaxis()
+        ax.set_ylim(-0.125, 0.125)
+        ax.set_title('Shear flow distribution')
+        ax.set_ylabel('y [m]')
+        ax.set_xlabel('z [m]')
+        clb.set_label(' Shear flow [N/m]')
+        plt.show()
+
+
     def get_mesh_coords(range11, range12, range21, range22):
         """
         Gets the yz coords of the mesh. Array sizes change with mesh sizes.
@@ -328,7 +350,7 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
         for item in qb_discrete:
             qb_plot = np.append(qb_plot, item)
 
-        plot_colour_scatter(qb_plot, qb_y, qb_z)
+        plot_colour_(qb_plot, qb_y, qb_z)
         # print('ugandans unite', qb_discrete, qb_plot)
 
         return qb_discrete, qb_net, qb_plot
@@ -390,6 +412,8 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
 
         # Output eta as a distance from the leading edge of the aileron
         return eta
+
+    get_shear_centre = get_shear_center
 
     def get_shear_distr(szy_magnit, szy_applied):
         '''
@@ -506,6 +530,8 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
         J = 1 / g_dtdz[-1]
 
         return J
+
+    get_torsional_stiffness_ = get_torsional_stiffness
 
     # def get_torsional_j(aircraft_class):
 
