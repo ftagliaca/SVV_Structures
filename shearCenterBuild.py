@@ -334,7 +334,7 @@ def torsional_stiffness(aircraft_class):
     a2 = aircraft_class.A2
     # print(r, a1,a2)
     #
-    print(t_sk, t_sp)
+    # print(t_sk, t_sp)
 
     # terms from the twist compatibility equation
     twist_a1 = 1 / (2 * a1)
@@ -435,23 +435,25 @@ def grapher(x, y, z):
     plt.show()
 
 
-# szy_list = list(szy_gen)
-# print('szy_list: \n', szy_list)
-# get_shear_distr(A320, [0, 1], [0, 0])
+if __name__ == "__main__":
 
-# get_idealised_shear_contribution(A320)
-# mesh_points, szy_outputs, qtot = get_shear_analysis(A320)
-mesh_size = 200
-x = np.linspace(0, A320.l_a, num=mesh_size)  # Subsequent functions accept numpy-arrays
-y = veri.aileron.Sy(x)
-z = veri.aileron.Sz(x)
-# z = [-142927.3208521, 50482.49383354, 47337.01848392, 28483.05827346,
-#      81931.44007969, -47482.17520149, -40350.65987382, -50588.59840216,
-#      -52326.56806738, 109083.76089247]
-# y = [-40780.67606372, -24640.70289515, -23940.76485954, -27257.63765062,
-#      21286.85433852, 14219.16544322, 13295.9750672, 8606.43415073,
-#      9175.02022091, 90179.46565151]
-mesh_points, szy_outputs, qtot = get_shear_analysis(A320,mesh_size, x, y, z)
-print(qtot)
-# grapher(mesh_points, szy_outputs[:, 0], szy_outputs[:, 1])
-grapher(x, y, z)
+    # szy_list = list(szy_gen)
+    # print('szy_list: \n', szy_list)
+    # get_shear_distr(A320, [0, 1], [0, 0])
+
+    # get_idealised_shear_contribution(A320)
+    # mesh_points, szy_outputs, qtot = get_shear_analysis(A320)
+    mesh_size = 200
+    x = np.linspace(0, A320.l_a, num=mesh_size)  # Subsequent functions accept numpy-arrays
+    y = veri.aileron.Sy(x)
+    z = veri.aileron.Sz(x)
+    # z = [-142927.3208521, 50482.49383354, 47337.01848392, 28483.05827346,
+    #      81931.44007969, -47482.17520149, -40350.65987382, -50588.59840216,
+    #      -52326.56806738, 109083.76089247]
+    # y = [-40780.67606372, -24640.70289515, -23940.76485954, -27257.63765062,
+    #      21286.85433852, 14219.16544322, 13295.9750672, 8606.43415073,
+    #      9175.02022091, 90179.46565151]
+    mesh_points, szy_outputs, qtot = get_shear_analysis(A320,mesh_size, x, y, z)
+    print(qtot)
+    # grapher(mesh_points, szy_outputs[:, 0], szy_outputs[:, 1])
+    grapher(x, y, z)

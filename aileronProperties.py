@@ -179,7 +179,6 @@ class Aileron():
 
         self.Izz = I_zztot
         self.Iyy = I_yytot
-        print("Iyy =" , I_yytot, "Izz = " , I_zztot )
         return(I_yytot, I_zztot)
 
     def torsionalStiffness(self):
