@@ -14,15 +14,10 @@ Sz and Sy are taken to be nonzero so Izz and Iyy are required.
 """
 
 import math as m
-
-import matplotlib.pyplot as plt
 import numpy as np
-
 import internalLoadsStresses as ils
 from aileronProperties import A320
 
-# from mpl_toolkits.mplot3d import axes3d
-# import main2 as veri
 # import of class in order to use geometrical properties
 #
 
@@ -375,11 +370,11 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=10):
         t_sp = aircraft_class.t_sp
         t_sk = aircraft_class.t_sk
 
-        a1 = aircraft_class.A1
-        a2 = aircraft_class.A2
-        # print(r, a1,a2)
-        #
-        print(t_sk, t_sp)
+    a1 = aircraft_class.A1
+    a2 = aircraft_class.A2
+    # print(r, a1,a2)
+    #
+    # print(t_sk, t_sp)
 
         # terms from the twist compatibility equation
         twist_a1 = 1 / (2 * a1)
@@ -473,9 +468,10 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=10):
         plt.plot(x, z)
         plt.show()
 
-    # szy_list = list(szy_gen)
-    # print('szy_list: \n', szy_list)
-    # get_shear_distr(A320, [0, 1], [0, 0])
+
+# szy_list = list(szy_gen)
+# print('szy_list: \n', szy_list)
+# get_shear_distr(A320, [0, 1], [0, 0])
 
     # get_idealised_shear_contribution(A320)
     # mesh_points, szy_outputs, qtot = get_shear_analysis(A320)

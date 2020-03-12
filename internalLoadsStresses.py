@@ -2,20 +2,16 @@ from math import sqrt, cos, sin, tan
 import numpy as np
 from tools import macaulay, solveInternal
 from aileronProperties import Aileron
-from aero_loads import AerodynamicLoad
-from integrals import FiveIntegral, TripleIntegralZSC, DoubleIntegral, DoubleIntegralZSC, ThreeIntegral
+from integrals import Integral, IntegralShear
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
-
-aeroLoad = AerodynamicLoad(A320, "data/aerodynamicloada320.dat")
-q = aeroLoad.get_values_grid
 
 try:
     cF = np.genfromtxt("reactionForces.dat", delimiter=",", comments = "#")
 except OSError as e:
-    cF = solveInternal(A320, q)
+    cF = solveInternal(A320)
 
-cF = solveInternal(A320, q)
+cF = solveInternal(A320)
 
 def normalStress(y, z, x, M_z , M_y , Aileron = A320):
     '''
@@ -54,7 +50,7 @@ def v(x, aileron = A320):
     v += cF[7]/6*macaulay(x,aileron.x_2)**3
     v += -aileron.P/6*macaulay(x,aileron.x_II)**3*sin(aileron.theta)
     v += cF[9]/6*macaulay(x,aileron.x_3)**3
-    v += -FiveIntegral(x)
+    v += -Integral(x, 5)
     v *= -1/(aileron.E*aileron.Izz)
     v += cF[0]*x+cF[1]
 
@@ -66,7 +62,7 @@ def w(x, aileron = A320):
     W += -cF[8]/6*macaulay(x,aileron.x_2)**3
     W += aileron.P/6*macaulay(x,aileron.x_II)**3*cos(aileron.theta)
     W += -cF[10]/6*macaulay(x,aileron.x_3)**3
-    W *= -1/(aileron.E*aileron.Iyy)
+    W *= 1/(aileron.E*aileron.Iyy)
     W += cF[2]*x+cF[3]
 
     return W
@@ -86,22 +82,22 @@ def S_z(x, aileron = A320):
     S_z_tot += cF[7]*macaulay(x, aileron.x_2)**0 if macaulay(x,aileron.x_2)>0 else 0
     S_z_tot += cF[9]*macaulay(x, aileron.x_3)**0 if macaulay(x,aileron.x_3)>0 else 0
     S_z_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)**0 if macaulay(x,aileron.x_II)>0 else 0
-    S_z_tot += -DoubleIntegral(x)
+    S_z_tot += -Integral(x, 2)
 
     return S_z_tot
 
 def phi(x, aileron = A320):
     z_hat = -0.215
     J = 0.00024311681258111343
-    T = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
+    T = cos(aileron.theta)*aileron.r+sin(aileron.theta)*z_hat
 
     phi_tot  = cF[11]*macaulay(x, aileron.x_I)*T
     phi_tot += -aileron.P*macaulay(x, aileron.x_II)*T
-    phi_tot += -cF[5]*macaulay(x, aileron.x_1)*(z_hat+aileron.r)
-    phi_tot += -cF[7]*macaulay(x, aileron.x_2)*(z_hat+aileron.r)
-    phi_tot += -cF[9]*macaulay(x, aileron.x_3)*(z_hat+aileron.r)
-    phi_tot += -TripleIntegralZSC(x, z_hat)
-    phi_tot *= (1/aileron.G*J)
+    phi_tot += cF[5]*macaulay(x, aileron.x_1)*(z_hat+aileron.r)
+    phi_tot += cF[7]*macaulay(x, aileron.x_2)*(z_hat+aileron.r)
+    phi_tot += cF[9]*macaulay(x, aileron.x_3)*(z_hat+aileron.r)
+    phi_tot += -IntegralShear(x, z_hat+aileron.r, 3)
+    phi_tot *= 1/(aileron.G*J)
     phi_tot += cF[4]
 
     return phi_tot
@@ -121,18 +117,16 @@ def M_z(x, aileron = A320):
     M_z_tot += cF[7]*macaulay(x, aileron.x_2)
     M_z_tot += cF[9]*macaulay(x, aileron.x_3)
     M_z_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)
-    M_z_tot += -ThreeIntegral(x)
+    M_z_tot += -Integral(x, 3)
 
     return M_y_tot
 
 def T(x, aileron = A320):
-    def dtau(z, x):
-        return q(z,x)*(z-z_hat)
 
     z_hat = -0.215
     T_c = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
     T_tot  = cF[11]*T_c*macaulay(x, aileron.x_I)**0
     T_tot += -aileron.P*T_c*macaulay(x, aileron.x_II)**0
-    T_tot += -DoubleIntegralZSC(x, z_hat)
+    T_tot += -IntegralShear(x, z_hat+aileron.r, 2)
 
     return T_tot

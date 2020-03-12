@@ -21,9 +21,10 @@ V_p = np.zeros(n)
 W_p = np.zeros(n)
 P_p = np.zeros(n)
 for i,x in enumerate(X):
-    V_p[i] = v(x)
-    W_p[i] = w(x)
     P_p[i] = phi(x)
+    V_p[i] = v(x) + P_p[i]*(-0.24023+A320.r)
+    W_p[i] = w(x) - P_p[i]*A320.r
+
 
 V = V_p*np.cos(A320.theta) + W_p*np.sin(A320.theta)
 W = W_p*np.cos(A320.theta) + V_p*np.sin(A320.theta)

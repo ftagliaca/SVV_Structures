@@ -1,6 +1,7 @@
-import math
-import numpy as np
 from matplotlib import pyplot as plt
+import os
+import numpy as np
+import math
 
 class Aileron():
     def __init__(self, C_a, l_a, x_1, x_2, x_3, x_a, h, t_sk, t_sp, t_st, h_st, w_st, n_st, d_1, d_3, theta, P):
@@ -26,7 +27,7 @@ class Aileron():
         self.x_I = self.x_2 - 0.5*self.x_a
         self.x_II = self.x_2 + 0.5*self.x_a
 
-        #Material properties obtianed from http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T3
+        #Material properties obtained from http://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA2024T3
 
         self.E = 73.1e9
         self.G = 28e9
@@ -34,6 +35,7 @@ class Aileron():
         self.stringersPosition()
         self.zCentroid()
         self.momInertia()
+
 
     def stringersPosition(self):
         '''
@@ -144,7 +146,7 @@ class Aileron():
 
         dz_stif = (self.Q_stiff)/(self.n_st * A_stif)
 
-        I_yy = A_halfcircle * dz_halfcircle**2 + A_skin * dz_skin**2 + A_spar * dz_spar**2
+        I_yy = A_halfcircle*2*dz_halfcircle**2 + A_skin * dz_skin**2 + A_spar * dz_spar**2
 
         #I_zz calculations
         dy_halfcircle = 0
@@ -158,7 +160,7 @@ class Aileron():
             dz_st = self.st_pos[i,1]+zCentroid
             dy_st = self.st_pos[i,0]
 
-            I_yy += A_stif * dz_st**2
+            I_yy += A_stif *dz_st**2
             I_zz += A_stif * dy_st**2
 
 
@@ -172,14 +174,13 @@ class Aileron():
         #I_yyspar = self.h * self.t_sp**3 / 12
         #I_yyspar is 0, thinwalled assumption.
 
-        I_yyhc = I_zzhc = 0.5*math.pi*self.t_sk*r**3
-
+        I_yyhc = 1/16*math.pi*self.h**3 *self.t_sk+ (0.5*math.pi*self.h*self.t_sk)*(self.h/math.pi)**2
+        I_zzhc = 1/16*math.pi*self.h**3 *self.t_sk 
         I_zztot = I_zz + 2*I_zzskin + I_zzhc + I_zzspar
         I_yytot = I_yy + 2*I_yyskin + I_yyhc
 
         self.Izz = I_zztot
         self.Iyy = I_yytot
-
         return(I_yytot, I_zztot)
 
     def torsionalStiffness(self):
@@ -231,6 +232,9 @@ class Aileron():
         x_i = 0.5 * (0.5 * self.l_a * (1 - np.cos(theta)) + 0.5 * self.l_a * (1 - np.cos(theta_1)))
 
         return x_i
+
+
+
 
 A320 = Aileron(0.547, 2.771, 0.153, 1.281, 2.681, 28.0, 22.5, 1.1, 2.9, 1.2, 1.5, 2.0, 17, 1.103, 1.642, 26, 91.7)
 A320.stringersPosition()
