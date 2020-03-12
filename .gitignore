@@ -1,0 +1,16 @@
+.vscode/.ropeproject/objectdb
+.gitignore
+__pycache__/
+__pycache__/*
+
+.vscode/.ropeproject/config.py
+.idea
+.idea/*
+
+aero_debug_plot_test.py
+aero_debug_plot.py
+test_data.dat
+
+.DS_Store
+**/.DS_Store
+
