@@ -33,6 +33,7 @@ _ = A320.momInertia()
 
 
 def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
+    # mesh_size = 100
     # another instance of quality of life variable naming at a cost of absolute dumbness...
     print('are you ready for a bad time?')
     h_spar = aircraft_class.h  # height of aileron in y direction, also the length of the spar
