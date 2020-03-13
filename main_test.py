@@ -4,7 +4,7 @@ from unittest import TestCase
 import unittest
 import numpy as np
 import math as m
-from shearCenterBuild import shear_calc_env
+from shearCenterBuild import get_shear_centre, get_torsional_stiffness_ as torsional_stiffness
 from collections import namedtuple
 
 VerificationProperties = namedtuple('VerificationProperties', [
@@ -385,7 +385,7 @@ class GeometricalProperties(TestCase):
             print("y: ", end='')
             self.assertEqual(self.verification_properties.y_shear_centre, 0, msg="y shear centre location is not correct.")
             print("z: ", end='')
-            self.assertEqual(self.verification_properties.z_shear_centre, get_shear_center(self.aileron)[0], msg="z shear centre location is not correct.")
+            self.assertEqual(self.verification_properties.z_shear_centre, get_shear_centre(), msg="z shear centre location is not correct.")
 
             print("- Torsional constant")
             self.assertAlmostEqual(self.verification_properties.torsional_constant, torsional_stiffness(self.aileron)[0], delta=1e-6, msg="J is not correct.")
