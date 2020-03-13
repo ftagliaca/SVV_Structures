@@ -4,7 +4,7 @@ from unittest import TestCase
 import unittest
 import numpy as np
 import math as m
-from shearCenterBuild import get_shear_center, torsional_stiffness
+from shearCenterBuild import shear_calc_env
 from collections import namedtuple
 
 VerificationProperties = namedtuple('VerificationProperties', [
