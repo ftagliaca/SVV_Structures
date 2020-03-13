@@ -5,8 +5,8 @@ from math import cos, sin, sqrt, tan
 from integrals import Integral, IntegralShear
 import sympy
 
-def macaulay(x,x1):
-    return x-x1 if (x-x1)>0 else 0
+def macaulay(x,x1, p = 1):
+    return (x-x1)**p if (x-x1)>0 else 0
 
 def solveInternal(alr: Aileron):
     '''
@@ -68,8 +68,8 @@ def solveInternal(alr: Aileron):
                    [x_3,1,0,0,z_hat+r,-(x_3-x_1)**3/(6*E*I_zz)+(z_hat+r)**2*(x_3-x_1)/(G*J),0,-(x_3-x_2)**3/(6*E*I_zz)+(z_hat+r)**2*(x_3-x_2)/(G*J),0,0,0,-sin(theta)*(x_3-x_I)**3/(6*E*I_zz)+T*(x_3-x_I)/(G*J)*(z_hat+r)], #v_3+p_3*(z+r) = d_3cos(theta)
                    [0,0,x_3,1,0,0,-(x_3-x_1)**3/(6*E*I_yy),0,-(x_3-x_2)**3/(6*E*I_yy),0,0,-cos(theta)*(x_3-x_I)**3/(6*E*I_yy)], #w_3 = -d_3sin(theta)
                    [x_I*sin(theta)*(z_hat+r),sin(theta)*(z_hat+r),x_I*cos(theta),cos(theta),(z_hat+r),-sin(theta)*(x_I-x_1)**3/(6*E*I_zz)+(x_I-x_1)*(z_hat+r)**2/(G*J),-cos(theta)*(x_I-x_1)**3/(6*E*I_yy),0,0,0,0,0],#sin(theta)*(v_I+p_I*(z+r))+cos(theta)*(w_I) = 0
-                   [0,0,0,0,0,1,0,1,0,1,0,sin(theta)], #R_z(l_a) = 0
-                   [0,0,0,0,0,0,-1,0,-1,0,-1,-cos(theta)], #R_y(l_a) = 0
+                   [0,0,0,0,0,1,0,1,0,1,0,sin(theta)], #R_y(l_a) = 0
+                   [0,0,0,0,0,0,-1,0,-1,0,-1,-cos(theta)], #R_z(l_a) = 0
                    [0,0,0,0,0,l_a-x_1,0,l_a-x_2,0,l_a-x_3,0,sin(theta)*(l_a-x_I)], #M_z(l_a) = 0
                    [0,0,0,0,0,0,-(l_a-x_1),0,-(l_a-x_2),0,-(l_a-x_3),-cos(theta)*(l_a-x_I)], #M_y(l_a) = 0
                    [0,0,0,0,0,-(z_hat+r),0,-(z_hat+r),0,-(z_hat+r),0,-T]],dtype='float') #T(l_a) = 0

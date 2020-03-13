@@ -173,13 +173,12 @@ class Aileron():
         #I_yyspar is 0, thinwalled assumption.
 
         I_yyhc = 1/16*math.pi*self.h**3 *self.t_sk+ (0.5*math.pi*self.h*self.t_sk)*(self.h/math.pi)**2
-        I_zzhc = 1/16*math.pi*self.h**3 *self.t_sk 
+        I_zzhc = 1/16*math.pi*self.h**3 *self.t_sk
         I_zztot = I_zz + 2*I_zzskin + I_zzhc + I_zzspar
         I_yytot = I_yy + 2*I_yyskin + I_yyhc
 
         self.Izz = I_zztot
         self.Iyy = I_yytot
-        print("Iyy =" , I_yytot, "Izz = " , I_zztot )
         return(I_yytot, I_zztot)
 
     def torsionalStiffness(self):
