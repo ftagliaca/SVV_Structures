@@ -350,7 +350,7 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
         for item in qb_discrete:
             qb_plot = np.append(qb_plot, item)
 
-        plot_colour_(qb_plot, qb_y, qb_z)
+        # plot_colour_(qb_plot, qb_y, qb_z)
         # print('ugandans unite', qb_discrete, qb_plot)
 
         return qb_discrete, qb_net, qb_plot
@@ -489,46 +489,27 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
         # return x_mesh_points
 
     def get_torsional_stiffness(aircraft_class):
-        # aileron dimensions and thicknesses imported through self.
-        r = aircraft_class.h / 2
-        ds_halfcircle = m.pi * r
-        ds_spar = aircraft_class.h
-        ds_skin = m.sqrt((r * r) + (l_tr * l_tr))
-        t_sp = aircraft_class.t_sp
-        t_sk = aircraft_class.t_sk
+        h_a = aileron.h
+        C_a = aileron.C_a
+        
+        t_spar = aileron.t_sp
+        t_skin = aileron.t_sk
 
-        a1 = aircraft_class.A1
-        a2 = aircraft_class.A2
-        # print(r, a1,a2)
-        #
-        # print(t_sk, t_sp)
+        A_cell1 = aileron.A1
+        A_cell2 = aileron.A2
 
-        # terms from the twist compatibility equation
-        twist_a1 = 1 / (2 * a1)
-        twist_a2 = 1 / (2 * a2)
-        twist_11 = ((m.pi * r) / t_sk + ds_spar / t_sp) * twist_a1
-        twist_12 = - ds_spar / t_sp * twist_a1
-        twist_21 = - ds_spar / t_sp * twist_a2
-        twist_22 = (2 * ds_skin / t_sk + ds_spar / t_sp) * twist_a2
+        l_side = np.sqrt((h_a / 2) ** 2 + (C_a - h_a/2) ** 2)
 
-        a_mat = np.array([[2 * a1, 2 * a2, 0],
-                          [twist_11, twist_12, -1],
-                          [twist_21, twist_22, -1]])
-        b_mat = np.array([[1], [0], [0]])
+        A = np.array([[-A_cell2,   -1/t_spar,        1/t_spar + 2 * l_side / t_skin * 1 / h_a],
+                    [0,          2 * A_cell1,                               2 * A_cell2],
+                    [-A_cell1,   1/2 * np.pi / t_skin + 1 / t_spar,           -1/t_spar]])
 
-        # solve for the G_d/dz_theta
-        g_dtdz = np.linalg.solve(a_mat, b_mat)
-        # print('g_dtdz', g_dtdz)
-        # divide the following formula in part with A1 and A2
-        # Both parts should consist of a spar part and the rest
-        # Gdthetadz = 1 / (2 * a1) * (
-        #         (shearflows[0, 0] + shearflows[0, 2]) * ds_quartercircle / t_sk +
-        #         shearflows[0, 1] * ds_spar / t_sp) + 1 / (2 * a2) * (
-        #                     (shearflows[1, 0] + shearflows[1, 2]) * ds_skin / t_sk + shearflows[1, 1] * ds_spar / t_sp)
+        b = np.array([[0],
+                    [1],
+                    [0]])
 
-        # T = 1  # given assumption
-        J = 1 / g_dtdz[-1]
-
+        J = 2 / (np.linalg.solve(A, b)[0] * h_a)
+        
         return J
 
     get_torsional_stiffness_ = get_torsional_stiffness
