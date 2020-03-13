@@ -9,7 +9,6 @@ Sz and Sy are taken to be nonzero so Izz and Iyy are required.
 * Thickness is constant for the skin
 * The analysis for the stringers are done in the boom-skin analysis, with the skin analysed separately from the booms
 * Filippo says the coordinates of the booms are provided in a 17x2 matrix, with the boom areas to be constant.
-* TODO: set up framework to receive geometry values from Aileron class.
 * Note that symmetry means that top and bottom parts of the
 """
 
@@ -18,8 +17,6 @@ import numpy as np
 import internalLoadsStresses as ils
 from aileronProperties import A320
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-from matplotlib.colors import ListedColormap, BoundaryNorm
 
 # import of class in order to use geometrical properties
 #
@@ -41,12 +38,14 @@ class shear_calc_suite():
         self.h_spar = aircraft_class.h  # height of aileron in y direction, also the length of the spar
         self.l_sk = aircraft_class.l_s  # length of straight skin section
         self.z_bar = aircraft_class.z_centroid  # z_coord of the centroid
+        # print(self.z_bar)
         self.l_tr = aircraft_class.C_a - aircraft_class.h / 2  # z length of the trailing edge section in cross-section(section II) (INIT)
         self.z_tr = - aircraft_class.C_a  # z coord of trailing edge section in cross section
+        # print(self.z_tr)
         self.radius = self.h_spar / 2  # half the length of the spar
         self.z_spar = - self.radius
-        self.t_spar = aircraft_class.self.t_spar  # thickness of spar
-        self.t_skin = aircraft_class.self.t_skin  # thickness of skin
+        self.t_spar = aircraft_class.t_sp  # thickness of spar
+        self.t_skin = aircraft_class.t_sk  # thickness of skin
         self.n_st = aircraft_class.n_st  # number of stringers
         self.a_i = aircraft_class.A1
         self.a_ii = aircraft_class.A2
@@ -57,10 +56,11 @@ class shear_calc_suite():
         self.yz_str = aircraft_class.n_st
         self.mesh_size = mesh_size
 
-        self.lambdas = self.get_constants(szy)
-        self.get_idealised_shear_contribution(mode=1)
-        self.get_shear_flow_base_v1(self.lambdas)
-        self.get_shear_flow_base_v2(self.lambdas)
+        # self.lambdas = self.get_constants(szy)
+        self.z_sc = self.get_shear_center()
+        # self.get_idealised_shear_contribution(mode=1)
+        # self.get_shear_flow_base_v1(lambdas)
+        # self.get_shear_flow_base_v2(lambdas)
 
         # check for stringers that are fore/aft of spar
         # strs_cell_placement is whether the stringers are in cell 1 (idx 0) or cell 2 (idx 1)
@@ -107,6 +107,32 @@ class shear_calc_suite():
         # NOTE output is in ayaz format, even though it still works for the stringer coords
         return [c1_bot, c1_top, c2_bot, c2_top]
 
+    @staticmethod
+    def get_cumulative_strs_influence(lambd_array, ayaz_mat, order=1):
+
+        # lambd array is in zy format, ayaz_mat is in yz format
+        # order of -1 means the procedure will be done in reverse (bottom-up), done by flipping the array
+        if order == -1:
+            ayaz_mat = np.flip(ayaz_mat, 0)
+
+        # print('waddis',ayaz_mat)
+        lambd_ayaz = np.multiply(np.flip(lambd_array,0), ayaz_mat)
+        # print('who ses im gey', lambd_ayaz)
+        # usage of epsilon denoting the summation method
+        eps_yz = np.empty(ayaz_mat.shape)
+        # print(ayaz_mat.shape)
+        # print(range(ayaz_mat.shape[0]))
+        for item in range(ayaz_mat.shape[0]):
+            # sum all items from prior ayaz
+            if item == ayaz_mat.shape[0]-1:
+                eps_yz[item] = np.sum((lambd_ayaz),0)
+            else:
+                eps_yz[item] = np.sum((lambd_ayaz[:item+1]), 0)
+        # print('eps:', eps_yz)
+        eps_tot = np.sum(eps_yz, 1)
+        # print('dedly komandos', eps_tot)
+        return eps_tot
+
     def get_idealised_shear_contribution(self, mode=1):
         """
         Get the summed carried shear flows on the booms per wall. This is used in the subsequent base
@@ -149,11 +175,10 @@ class shear_calc_suite():
 
         # eps_izy, eps_yz = get_idealised_shear_contribution(aircraft_class)
         str_pos, ayaz_mat = self.get_idealised_shear_contribution()
-        n_tr = int((self.n_st - 3) / 2)  # number of stringers on trailing edge, per skin, must be integer
+        n_tr = int((self.n_st - 5) / 2)  # number of stringers on trailing edge, per skin, must be integer
         # print(n_tr)
-        print(ayaz_mat)
-        eps_yz = np.vstack((np.sum(ayaz_mat[0:2], 0), np.sum(ayaz_mat[2:n_tr + 2], 0),
-                            np.sum(ayaz_mat[n_tr + 2: self.n_st - 1], 0), np.sum(ayaz_mat[self.n_st - 1:], 0)))
+        eps_yz = np.vstack((np.sum(ayaz_mat[0:3], 0), np.sum(ayaz_mat[3:n_tr + 2], 0),
+                            np.sum(ayaz_mat[n_tr + 3: self.n_st - 1], 0), np.sum(ayaz_mat[self.n_st - 1:], 0)))
         # print(eps_yz)
         # print(str_pos)
         z_tr_i = - self.l_tr  # z length of the trailing edge section in cross-section(section II), but instantiated for
@@ -164,7 +189,7 @@ class shear_calc_suite():
         q_12 = lambd_array[1] * (self.t_spar * (- self.radius - self.z_bar) * self.h_spar) + q_11
         # q_13 = q_11  # taking the assumption that symmetry = same shear flow
         q_13 = lambd_array[0] * (
-                    self.t_skin * (- self.radius * self.radius + self.radius * self.z_bar * m.pi / 2) + eps_yz[-1, 1]) + \
+                self.t_skin * (- self.radius * self.radius + self.radius * self.z_bar * m.pi / 2) + eps_yz[-1, 1]) + \
                lambd_array[1] * (self.t_skin * - self.radius * self.radius + eps_yz[-1, 0]) + q_12
 
         q_21 = lambd_array[0] * (self.t_skin * (z_tr_i * self.l_sk + (- self.radius - self.z_bar)) + eps_yz[2, 1]) + \
@@ -173,7 +198,7 @@ class shear_calc_suite():
         q_22 = lambd_array[1] * (self.t_spar * (self.radius + self.z_bar) * self.radius) + q_21
         q_23 = q_21  # due the symmetry
         q_23 = lambd_array[0] * (
-                    self.t_skin * (self.l_sk / 2 * z_tr_i + self.l_sk * (- self.radius - self.z_bar)) + eps_yz[1, 1]) + \
+                self.t_skin * (self.l_sk / 2 * z_tr_i + self.l_sk * (- self.radius - self.z_bar)) + eps_yz[1, 1]) + \
                lambd_array[
                    1] * (self.t_skin * self.radius * self.l_sk / 2 + eps_yz[1, 0]) + q_22
 
@@ -182,32 +207,14 @@ class shear_calc_suite():
 
         return output_array
 
-    @staticmethod
-    def get_cumulative_strs_influence(lambd_array, ayaz_mat, order=1):
+    def plot_colour_scatter(self, qb_raw, qb_y, qb_z):
+        qb_toplot = np.empty((0,))
+        for item in qb_raw:
+            qb_toplot = np.append(qb_toplot, item)
 
-        # lambd array is in zy format, ayaz_mat is in yz format
-        # order of -1 means the procedure will be done in reverse (bottom-up), done by flipping the array
-        if order == -1:
-            ayaz_mat = np.flip(ayaz_mat, 0)
-
-        # print('waddis',ayaz_mat)
-        lambd_ayaz = np.multiply(lambd_array, ayaz_mat)
-        # print('who ses im gey', lambd_ayaz)
-        # usage of epsilon denoting the summation method
-        eps_yz = np.empty(ayaz_mat.shape)
-        # print(ayaz_mat.shape)
-        for item in range(ayaz_mat.shape[0]):
-            # sum all items from prior ayaz
-            eps_yz[item] = np.sum((lambd_ayaz[:item + 1]), 0)
-        # print('eps:', eps_yz)
-        eps_tot = np.sum(eps_yz, 1)
-        # print('dedly komandos', eps_tot)
-        return eps_tot
-
-    def plot_colour_scatter(self, qb_toplot, qb_y, qb_z):
         fig = plt.figure()
         ax2 = plt.axes()
-        p = ax2.scatter(qb_z, qb_y, c=(qb_toplot) * 10e3, cmap='jet')  # wing profile
+        p = ax2.scatter(qb_z, qb_y, c=qb_toplot, cmap='jet')  # wing profile
         clb = fig.colorbar(p)
         ax2.set_title('Shear flow distribution')
         ax2.set_ylabel('y [m]')
@@ -235,10 +242,10 @@ class shear_calc_suite():
         yz_22 = [self.z_spar + range22 / self.l_sk * self.radius, self.z_spar - range22 / self.l_sk * self.l_tr]
         yz_23 = [range22 / self.l_sk * self.radius, self.z_tr + range22 / self.l_sk * self.l_tr]
         yz_24 = [self.radius - range21, self.z_spar * np.ones(range21.size)]
-
+        shift = 0.05
         # for flattening everything into plotting
         big_y = np.vstack((yz_11[0], yz_12[0], yz_13[0], yz_21[0], yz_22[0], yz_23[0], yz_24[0])).flatten()
-        big_z = np.vstack((yz_11[1], yz_12[1], yz_13[1], yz_21[1], yz_22[1], yz_23[1], yz_24[1])).flatten()
+        big_z = np.vstack((yz_11[1]+shift, yz_12[1]+shift, yz_13[1]+shift, yz_21[1], yz_22[1], yz_23[1], yz_24[1])).flatten()
         # print('waddisshit', big_y,big_z)
         # fig, ax = plt.subplots()
         # ax.scatter(big_z, big_y)
@@ -252,14 +259,13 @@ class shear_calc_suite():
         str_pos, ayaz_mat = self.get_idealised_shear_contribution(mode=-1)
         # print(ayaz_mat)
         ayaz11_stif = ayaz_mat[0]
+        # print(ayaz11_stif)
         # qb11 -----------
         range_11 = np.linspace(0, np.pi / 2, self.mesh_size)  # range_11 contains radians
         # print('range_11', range_11)
-        print()
         qb11_z = lambd_array[0] * (
                 (self.radius * self.t_skin * (
-                            range_11 * (-self.radius - self.z_bar) + np.sin(range_11) * self.radius)) + ayaz11_stif[
-                    0, 1])
+                        range_11 * (self.z_spar - self.z_bar) + np.sin(range_11) * self.radius)) + ayaz11_stif[0, 1])
         qb11_y = lambd_array[1] * (self.radius * self.radius * self.t_skin * (np.cos(range_11) - 1) + ayaz11_stif[0, 0])
         # inputting the stiffener influence (note that there're two stiffeners on the arc, not incl. the LE one)
         theta_stif = self.d_st / self.radius
@@ -272,10 +278,10 @@ class shear_calc_suite():
 
         # qb12 -----------
         range_12 = np.linspace(0, self.h_spar, self.mesh_size)  # range_12 is about distance, not radians
-        qb12_z = lambd_array[0] * (self.t_spar * (-self.radius - self.z_bar) * range_12)
-        qb12_y = lambd_array[1] * self.t_spar / 2 * (range_12 * range_12 - self.h_spar * range_12)
+        qb12_z = lambd_array[0] * (self.t_spar * (self.z_spar - self.z_bar) * range_12)
+        qb12_y = lambd_array[1] * self.t_spar / 2 * (np.square(range_12) - self.h_spar * range_12)
         # print(np.ones(qb11.shape[0]))
-        qb12 = qb12_z + qb12_y + qb11[-1] * np.ones(self.mesh_size)
+        qb12 = qb12_z + qb12_y + qb11[-1]
         # print(qb12)
 
         # qb13 -----------
@@ -289,8 +295,8 @@ class shear_calc_suite():
         # print('dadday',strs13_passed)
         eps13_tot = self.get_cumulative_strs_influence(lambd_array, ayaz13_stif)
         qb13_z = lambd_array[0] * (self.radius * self.t_skin * (
-                    range_11 * (-self.radius - self.z_bar) + self.radius * (1 - np.cos(range_11))))
-        qb13_y = lambd_array[1] * (self.radius * self.radius * self.t_skin * (np.sin(range_11)))
+                range_11 * (self.z_spar - self.z_bar) + self.radius * (1 - np.cos(range_11))))
+        qb13_y = lambd_array[1] * (self.radius ** 2 * self.t_skin * (np.sin(range_11)))
         qb13_proto = np.add(qb13_y, qb13_z)
         # ayaz_stif3 = lambd_array[0] * ayaz_mat[1, 1] + lambd_array[1] * ayaz_mat[1, 0]
         # print('ayaz', ayaz_stif3)
@@ -301,17 +307,17 @@ class shear_calc_suite():
         # qb21 -----------
         # range_21 is similar to range_12, the segment is split up to small segments of a defined mesh size.
         range_21 = np.linspace(0, self.radius, self.mesh_size)
-        qb21_z = lambd_array[0] * (self.t_spar * (- self.radius - self.z_bar) * range_21)
-        qb21_y = lambd_array[1] * (self.t_spar * -range_12 * range_21)
+        qb21_z = lambd_array[0] * (self.t_spar * (self.z_spar - self.z_bar) * range_21)
+        qb21_y = lambd_array[1] * (self.t_spar * - np.square(range_21)/2)
         qb21 = np.add(qb21_y, qb21_z)
 
         # qb22 ------------
         range_22 = np.linspace(0, self.l_sk, self.mesh_size)
         ayaz22_stif = ayaz_mat[2]
         qb22_z = lambd_array[0] * self.t_skin * (
-                    (- self.radius - self.z_bar) * range_22 - (range_22 ** 2) / (2 * self.l_sk) * self.l_tr)
+                (self.z_spar - self.z_bar) * range_22 - np.square(range_22) / (2 * self.l_sk) * self.l_tr)
         qb22_y = lambd_array[1] * self.t_skin * (
-                    -self.radius * range_22 + (range_22 ** 2) / (2 * self.l_sk) * self.radius)
+                self.z_spar * range_22 + np.square(range_22) / (2 * self.l_sk) * self.radius)
         qb22_proto = np.add(qb22_y, qb22_z)
         strs22_passed = (range_22 - self.d_i) / self.d_st
         strs22_passed = strs22_passed.astype(int)
@@ -324,8 +330,8 @@ class shear_calc_suite():
         # qb23 ------------
         ayaz23_stif = ayaz_mat[3]
         qb23_z = lambd_array[0] * self.t_skin * (
-                    (self.z_bar - self.z_tr) * range_22 + (range_22 ** 2) / (2 * self.l_sk) * self.l_tr)
-        qb23_y = lambd_array[1] * self.t_skin * (range_22 ** 2) / (2 * self.l_sk) * self.radius
+                (self.z_tr - self.z_bar) * range_22 + (np.square(range_22)) / (2 * self.l_sk) * self.l_tr)
+        qb23_y = lambd_array[1] * self.t_skin * (np.square(range_22)) / (2 * self.l_sk) * self.radius
         qb23_proto = np.add(qb23_y, qb23_z)
         strs23_passed = (range_22 - self.d_st / 2) / self.d_st
         strs23_passed = strs23_passed.astype(int)
@@ -334,25 +340,24 @@ class shear_calc_suite():
         # print(qb23_proto)
         qb23 = np.where(range_22 < self.d_i / 2, qb23_proto, qb23_proto + eps23[strs23_passed]) + qb22[-1]
         # print(qb23[-1])
-
         # qb24 -------------
-        qb24_z = lambd_array[0] * self.t_spar * (-self.radius - self.z_bar) * range_21
-        qb24_y = lambd_array[1] * self.t_spar * (self.radius * range_21 - range_21 ** 2 / 2)
+        qb24_z = lambd_array[0] * self.t_spar * (self.z_spar - self.z_bar) * range_21
+        qb24_y = lambd_array[1] * self.t_spar * (self.radius * range_21 - np.square(range_21)/ 2)
         qb24 = np.add(qb24_y, qb24_z) + qb23[-1]
 
         qb_discrete = [qb11, qb12, qb13, qb21, qb22, qb23, qb24]
         qb_net = [qb11[-1], qb12[-1], qb13[-1], qb21[-1], qb22[-1], qb23[-1], qb24[-1]]
         # qb_yz_coords = get_mesh_coords(range_11, range_12, range_21, range_22)
         qb_y, qb_z = self.get_mesh_coords(range_11, range_12, range_21, range_22)
-
+        # print(qb_discrete)
         qb_plot = np.empty((0,))
         for item in qb_discrete:
             qb_plot = np.append(qb_plot, item)
 
-            self.plot_colour_scatter(qb_plot, qb_y, qb_z)
+        # self.plot_colour_scatter(qb_plot, qb_y, qb_z)
         # print('ugandans unite', qb_discrete, qb_plot)
 
-        return qb_discrete, qb_net, qb_plot
+        return qb_discrete, qb_net, qb_y, qb_z
 
     @staticmethod
     def get_shortest_normal(self):
@@ -369,9 +374,9 @@ class shear_calc_suite():
         :return:
         """
         # Since aileron is symmetric on the z axis, only a downwards shear of S_y = 1 is applied.
-
+        print('Shear center Calculation')
         lambdas = self.get_constants([0, -1])
-        _, qb_list, _ = self.get_shear_flow_base_v2(lambdas)
+        _, qb_list, _, _ = self.get_shear_flow_base_v2(lambdas)
 
         # print(qb_list)
         # since only the z coordinate of the shear centre is needed,
@@ -398,19 +403,19 @@ class shear_calc_suite():
             return np.linalg.solve(a_matrix, b_matrix)
 
         c_matrix = get_sc_twist().flatten()
-        print('c_matrix: ', c_matrix)
+        # print('c_matrix: ', c_matrix)
         d = self.get_shortest_normal(self)
 
         # print(a_i, a_ii)
         # solve for shear centre
-        eta = - self.radius - ((qb_list[0] + qb_list[2]) * (1 / 2 * m.pi * self.radius * self.radius) + (
+        eta = - self.radius - ((qb_list[0] + qb_list[2]) * (0.5 * m.pi * self.radius * self.radius) + (
                 qb_list[4] + qb_list[5]) * self.l_sk * d + 2 * self.a_i * c_matrix[0] + 2 * self.a_ii * c_matrix[1])
         print('eta is: ', eta, self.radius)
 
         # Output eta as a distance from the leading edge of the aileron
         return eta
 
-    def get_shear_distr(self, szy_magnit, szy_applied):
+    def get_shear_distr(self, szy_magnit, szy_applied, q_discrete, q_base):
         """
         Gets the shear distribution from a given shear load (and point of application) and spits out the
         redundant shear flow
@@ -419,12 +424,13 @@ class shear_calc_suite():
                             Uses the stated coordinate system. Units in metres.
         :return: redundant shear flows in cells I and II, [q_0,I, q_0,II]
         """
-        lambds = self.get_constants(szy_magnit)
+        # lambds = self.get_constants(szy_magnit)
         # q_base = get_shear_flow_base_v1(lambds)
-        _, q_base, _ = self.get_shear_flow_base_v2(lambds)
+        # q_discrete, q_base, y_coords, z_coords = self.get_shear_flow_base_v2(lambds)
         # get shortest distance perpendicular to the line
         d = self.get_shortest_normal(self)
-        eta = self.get_shear_center()
+        # eta = self.get_shear_center()
+        eta = self.z_sc
         # preparing terms from moment equation.
         mom_known = (q_base[0] + q_base[2]) * (1 / 2 * m.pi * self.radius * self.radius) + (
                 q_base[4] + q_base[5]) * self.l_sk * d  # contribution of base shears
@@ -453,19 +459,45 @@ class shear_calc_suite():
         big_chungus_r3 = np.array([twist_21, twist_22, -1])
         big_chungus_lhs = np.vstack((big_chungus_r1, big_chungus_r2, big_chungus_r3))
         big_chungus_rhs = np.array([[mom_rhs], [twist_rhs_1], [twist_rhs_2]])
-        q0s = np.linalg.solve(big_chungus_lhs, big_chungus_rhs)
+        big_chungus_sol = np.linalg.solve(big_chungus_lhs, big_chungus_rhs)
+        # print(big_chungus_sol)              
         # print(q_base)
         # print(np.hstack((q0s[0, 0] * np.ones((2, 1)), q0s[1, 0] * np.ones((2, 1)))))
-        q_tot = q_base + np.vstack((q0s[0, 0] * np.ones((1, 3)), q0s[1, 0] * np.ones((1, 3))))
-        q_tot = q_tot.flatten()
+        # q_tot = q_base + np.vstack((q0s[0, 0] * np.ones((1, 3)), q0s[1, 0] * np.ones((1, 3))))
+        # q_tot = q_tot.flatten()
         # print(q_tot)
-        q0s = np.transpose(q0s)
+        q0s = np.transpose(big_chungus_sol[:2, :]).flatten()
+        # print(q0s)
+        q_tot = [q_discrete[0] + q0s[0],
+                 q_discrete[1] + q0s[0] - q0s[1],
+                 q_discrete[2] + q0s[0],
+                 q_discrete[3] + q0s[1] - q0s[0],
+                 q_discrete[4] + q0s[1],
+                 q_discrete[5] + q0s[1],
+                 q_discrete[6] + q0s[1] - q0s[0]]
+
         # print(q0s)
         # output formats:
         # q0s gives a 1x3 matrix, with q0I, q0II and d/dz theta
         # q_base gives a 2x3 matrix with the q_base on each wall, row is cell, column is wall
         # q_tot gives a 2x3 matrix with q_tot = q_base + q0,cell, row is cell, column is wall
-        return q0s, q_base, q_tot
+        return q0s, q_tot
+
+    def test_symmetry_unit(self, szy):
+        lambds = self.get_constants(szy)
+        qb_discrete, q_net, qy, qz = self.get_shear_flow_base_v2(lambds)
+        _, q_tot = self.get_shear_distr(szy, [self.z_sc, 0], qb_discrete, q_net)
+        self.plot_colour_scatter(qb_discrete, qy, qz)
+
+    def get_shear_analysis_on_x(self, x_point):
+        sz = float(ils.S_z(x_point))
+        sy = float(ils.S_y(x_point))
+        lambds = self.get_constants([sz, sy])
+        qb_discrete, q_net, qy, qz = self.get_shear_flow_base_v2(lambds)
+        _, q_tot = self.get_shear_distr([sz, sy], [self.z_sc, 0], qb_discrete, q_net)
+        # self.plot_colour_scatter(qb_discrete, qy, qz)
+        # print(q_tot)
+        self.plot_colour_scatter(q_tot, qy, qz)
 
     def init_get_szy(self):
         x_max = self.aircraft_class.l_a  # aileron length
@@ -476,7 +508,7 @@ class shear_calc_suite():
         yield x_mesh_points
         for idx in range(x_mesh_points.size):
             x_point = x_mesh_points[idx]
-            s_z = float(ils.S_z(x_point))  # / 1e3
+            s_z = float(ils.S_z(x_point))  # / 1e3  , ils is imported from fillippo's
             s_y = float(ils.S_y(x_point))  # / 1e3
             print('shear in z and y: ', np.array([s_z, s_y]))
             yield np.array([s_z, s_y])
@@ -506,121 +538,11 @@ class shear_calc_suite():
 
         return J
 
-    def get_shear_analysis(self, extx, exty, extz):
-        z_SC = float(self.get_shear_center())
-        print('z_SC', z_SC)
-        mesh_size = len(extx)
-        szy_gen = self.init_get_szy()
-        mesh_points = szy_gen.__next__()
-        j = self.get_torsional_stiffness()
-        print('j', j)
-        q_total_big = np.empty((1, 6))
-        if len(exty) > 0:
-            print("using verification data)")
-            mesh_points = mesh_size
-            szy_list = [[extz[n], exty[n]] for n in range(0, mesh_size, 1)]
-            for x_idx in range(mesh_points):
-                # szy_current = [extz[x_idx],exty[x_idx]]
-                q0s, qbases, qtotals = self.get_shear_distr(szy_list[x_idx], [z_SC, 0])
-                # print('qtotals: ', extx[x_idx], '\n', qtotals)
 
+a320_shear = shear_calc_suite(A320, [0, 0], mesh_size=100)
+# a320_shear.get_shear_flow_base_v1([0,0])
 
-        else:
-            print("using our data")
-            szy_list = np.zeros((mesh_size + 1, 2))
-            qtotals = []
-            for idx in range(0, mesh_size):
-                try:
-                    # print('output', szy_gen.__next__())
-                    szy_current = szy_gen.__next__()
-                    szy_list[idx, 0] = szy_current[0]
-                    szy_list[idx, 1] = szy_current[1]
-                    # q0s, qbases, qtotals = get_shear_distr(A320, next(szy_gen), [z_SC, 0])
-                    q0s, qbases, qtotals = self.get_shear_distr(szy_current, [z_SC, 0])
-                    # print('q0s: \n', q0s)
-                    # print('qbases: \n', qbases)
-                    print('qtotals: ', extx[idx], '\n', qtotals)
-                    q_total_big = np.vstack((q_total_big, qtotals))
-                    # idx += 1
-
-                except StopIteration:
-                    break
-
-        return mesh_points, szy_list, q_total_big
-
-    # def grapher(x, y, z):
-    #     plt.title("Shear in y axis")
-    #     plt.xticks(x, rotation=40)
-    #     plt.ylabel('Shear force [N]')
-    #     plt.xlabel('x-location [m]')
-    #     plt.plot(x, y)
-    #     plt.show()
-    #
-    #     plt.title("Shear in z axis")
-    #     plt.xticks(x, rotation=40)
-    #     plt.ylabel('Shear force [N]')
-    #     plt.xlabel('x-location[m]')
-    #     plt.plot(x, z)
-    #     plt.show()
-
-    # szy_list = list(szy_gen)
-    # print('szy_list: \n', szy_list)
-    # get_shear_distr(A320, [0, 1], [0, 0])
-
-    # get_idealised_shear_contribution(A320)
-    # mesh_points, szy_outputs, qtot = get_shear_analysis(A320)
-    # mesh_size = 200
-    # x = np.linspace(0, A320.l_a, num=mesh_size)  # Subsequent functions accept numpy-arrays
-    # x = [0, 0.5, 0.6, 2.7]
-    # y = veri.aileron.Sy(x)
-    # z = veri.aileron.Sz(x)
-    # y = []
-    # z = []
-    # z = [-142927.3208521, 50482.49383354, 47337.01848392, 28483.05827346,
-    #      81931.44007969, -47482.17520149, -40350.65987382, -50588.59840216,
-    #      -52326.56806738, 109083.76089247]
-    # y = [-40780.67606372, -24640.70289515, -23940.76485954, -27257.63765062,
-    #      21286.85433852, 14219.16544322, 13295.9750672, 8606.43415073,
-    #      9175.02022091, 90179.46565151]
-
-    # mesh_points, szy_outputs, qtot = get_shear_analysis(A320, x, y, z)
-    # j = get_torsional_stiffness(A320)
-    # # print(j)
-    # print(qtot)
-    # # grapher(mesh_points, szy_outputs[:, 0], szy_outputs[:, 1])
-    # # grapher(x, y, z)
-    # # convert to shear stress since I don't have time
-    # self.t_skin = A320.self.t_skin
-    # self.t_spar = A320.self.t_spar
-    # # thicknesses = np.array([self.t_skin, self.t_spar, self.t_skin, self.t_skin, self.t_spar, self.t_skin])
-    # # big_boi = np.empty((0,6))
-    # # for iter in range(mesh_size):
-    # #     big_boi = np.vstack((big_boi,thicknesses))
-    #
-    # # q_tot = np.multiply(qtot )
-    #
-    # q_11t = qtot[:, 0] * self.t_skin
-    # q_12t = qtot[:, 1] * self.t_spar
-    # q_13t = qtot[:, 2] * self.t_skin
-    # q_21t = qtot[:, 3] * self.t_skin
-    # q_22t = qtot[:, 4] * self.t_spar
-    # q_23t = qtot[:, 5] * self.t_skin
-    # # print(q_11t.size)
-    #
-    # fig = plt.figure("Shear stress on cross section")
-    # plotted = plt.axes(projection='3d')
-    # plotted.set_xlabel("Wall")
-    # plotted.set_ylabel("x_position [m]")
-    # plotted.set_zlabel("Shear stress [N]")
-    # plotted.plot_wireframe(1 * np.ones(q_11t.size),range(q_11t.size),q_11t, color="black")
-    # plt.show()
-
-    # print(A320.st_pos.size)
-    # fig = plt.figure("Coordinates of stringers on cross-section")
-
-    # z_plot = q_tot.flatten()
-    # print(get_idealised_shear_contribution(A320))
-    # print("z-coord of centroid:", z_bar)
-    # print("Shear center z_coordinate", float(get_shear_center(aircraft_class)))
-    get_shear_flow_base_v2([1, 1])
-    get_shear_center()
+# get_shear_flow_base_v2([1, 1])
+# print(a320_shear.get_shear_center())
+a320_shear.get_shear_analysis_on_x(0.5)
+a320_shear.test_symmetry_unit([0,-1])
