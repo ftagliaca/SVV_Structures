@@ -71,6 +71,7 @@ t1 = time.time()
 dt = t1-t0
 print("Time taken to execute program ", dt/60, "min")
 
+plt.figure("Deflections", figsize =(32,16), dpi = 100)
 plt.subplot(221)
 plt.plot(X,V)
 plt.plot(X_I,V_I)
@@ -93,6 +94,7 @@ plt.title("Rotation around the hinge line")
 plt.savefig('figures/Deflections.png')
 plt.show()
 
+plt.figure("Moments_Shear", figsize =(32,16), dpi = 100)
 plt.subplot(231)
 plt.plot(X,-1*My)
 plt.plot(X_II,My_I)
