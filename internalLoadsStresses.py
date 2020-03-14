@@ -103,30 +103,34 @@ def phi(x, aileron = A320):
     return phi_tot
 
 def M_y(x, aileron = A320):
-    M_y_tot  = -cF[6]*macaulay(x, aileron.x_1)
-    M_y_tot += -cF[11]*cos(aileron.theta)*macaulay(x, aileron.x_I)
-    M_y_tot += -cF[8]*macaulay(x, aileron.x_2)
-    M_y_tot += -cF[10]*macaulay(x, aileron.x_3)
-    M_y_tot += aileron.P*cos(aileron.theta)*macaulay(x, aileron.x_II)
+    My_tot  = -cF[6]*macaulay(x, aileron.x_1)
+    My_tot += -cF[11]*cos(aileron.theta)*macaulay(x, aileron.x_I)
+    My_tot += -cF[8]*macaulay(x, aileron.x_2)
+    My_tot += -cF[10]*macaulay(x, aileron.x_3)
+    My_tot += aileron.P*cos(aileron.theta)*macaulay(x, aileron.x_II)
 
-    return M_y_tot
+    return My_tot
 
 def M_z(x, aileron = A320):
-    M_z_tot  = cF[5]*macaulay(x, aileron.x_1)
-    M_z_tot += cF[11]*sin(aileron.theta)*macaulay(x, aileron.x_I)
-    M_z_tot += cF[7]*macaulay(x, aileron.x_2)
-    M_z_tot += cF[9]*macaulay(x, aileron.x_3)
-    M_z_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)
-    M_z_tot += -Integral(x, 3)
+    Mz_tot  = cF[5]*macaulay(x, aileron.x_1)
+    Mz_tot += cF[11]*sin(aileron.theta)*macaulay(x, aileron.x_I)
+    Mz_tot += cF[7]*macaulay(x, aileron.x_2)
+    Mz_tot += cF[9]*macaulay(x, aileron.x_3)
+    Mz_tot += -aileron.P*sin(aileron.theta)*macaulay(x, aileron.x_II)
+    Mz_tot += -Integral(x, 3)
 
-    return M_y_tot
+    return Mz_tot
 
 def T(x, aileron = A320):
 
     z_hat = -0.215
-    T_c = cos(aileron.theta)*aileron.r-sin(aileron.theta)*z_hat
-    T_tot  = cF[11]*T_c*macaulay(x, aileron.x_I)**0
-    T_tot += -aileron.P*T_c*macaulay(x, aileron.x_II)**0
+    T = cos(aileron.theta)*aileron.r+sin(aileron.theta)*z_hat
+
+    T_tot  = cF[11]*macaulay(x, aileron.x_I, p = 0)*T
+    T_tot += -aileron.P*macaulay(x, aileron.x_II, p = 0)*T
+    T_tot += cF[5]*macaulay(x, aileron.x_1, p = 0)*(z_hat+aileron.r)
+    T_tot += cF[7]*macaulay(x, aileron.x_2, p = 0)*(z_hat+aileron.r)
+    T_tot += cF[9]*macaulay(x, aileron.x_3, p = 0)*(z_hat+aileron.r)
     T_tot += -IntegralShear(x, z_hat+aileron.r, 2)
 
     return T_tot
