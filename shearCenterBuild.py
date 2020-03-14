@@ -116,7 +116,7 @@ class shear_calc_suite():
             ayaz_mat = np.flip(ayaz_mat, 0)
 
         # print('waddis',ayaz_mat)
-        lambd_ayaz = np.multiply(np.flip(lambd_array,0), ayaz_mat)
+        lambd_ayaz = np.multiply(np.flip(lambd_array, 0), ayaz_mat)
         # print('who ses im gey', lambd_ayaz)
         # usage of epsilon denoting the summation method
         eps_yz = np.empty(ayaz_mat.shape)
@@ -124,10 +124,10 @@ class shear_calc_suite():
         # print(range(ayaz_mat.shape[0]))
         for item in range(ayaz_mat.shape[0]):
             # sum all items from prior ayaz
-            if item == ayaz_mat.shape[0]-1:
-                eps_yz[item] = np.sum((lambd_ayaz),0)
+            if item == ayaz_mat.shape[0] - 1:
+                eps_yz[item] = np.sum((lambd_ayaz), 0)
             else:
-                eps_yz[item] = np.sum((lambd_ayaz[:item+1]), 0)
+                eps_yz[item] = np.sum((lambd_ayaz[:item + 1]), 0)
         # print('eps:', eps_yz)
         eps_tot = np.sum(eps_yz, 1)
         # print('dedly komandos', eps_tot)
@@ -224,7 +224,7 @@ class shear_calc_suite():
         clb.set_label(' Shear flow [N/m]')
         plt.show()
 
-    def get_mesh_coords(self, range11, range12, range21, range22):
+    def get_mesh_coords(self, range11, range12, range21, range22, mode=1):
         """
         Gets the yz coords of the mesh. Array sizes change with mesh sizes.
         :param range11: array of s radians for circular segments
@@ -242,17 +242,21 @@ class shear_calc_suite():
         yz_22 = [self.z_spar + range22 / self.l_sk * self.radius, self.z_spar - range22 / self.l_sk * self.l_tr]
         yz_23 = [range22 / self.l_sk * self.radius, self.z_tr + range22 / self.l_sk * self.l_tr]
         yz_24 = [self.radius - range21, self.z_spar * np.ones(range21.size)]
-        shift = 0.05
         # for flattening everything into plotting
-        big_y = np.vstack((yz_11[0], yz_12[0], yz_13[0], yz_21[0], yz_22[0], yz_23[0], yz_24[0])).flatten()
-        big_z = np.vstack((yz_11[1]+shift, yz_12[1]+shift, yz_13[1]+shift, yz_21[1], yz_22[1], yz_23[1], yz_24[1])).flatten()
+
+        shift = 0.05
+        big_yb = np.vstack((yz_11[0], yz_12[0], yz_13[0], yz_21[0], yz_22[0], yz_23[0], yz_24[0])).flatten()
+        big_zb = np.vstack(
+            (yz_11[1] + shift, yz_12[1] + shift, yz_13[1] + shift, yz_21[1], yz_22[1], yz_23[1], yz_24[1])).flatten()
+        big_yt = np.vstack((yz_11[0], yz_12[0], yz_13[0], yz_22[0], yz_23[0])).flatten()
+        big_zt = np.vstack((yz_11[1], yz_12[1], yz_13[1], yz_22[1], yz_23[1])).flatten()
         # print('waddisshit', big_y,big_z)
         # fig, ax = plt.subplots()
         # ax.scatter(big_z, big_y)
         # plt.show()
 
         # return [yz_11,yz_12,yz_13, yz_21, yz_22, yz_23, yz_24]
-        return big_y, big_z
+        return big_yb, big_zb, big_yt, big_zt
 
     def get_shear_flow_base_v2(self, lambd_array):
         # lambd_array = np.reshape(lambd_array, (1,2))
@@ -308,7 +312,7 @@ class shear_calc_suite():
         # range_21 is similar to range_12, the segment is split up to small segments of a defined mesh size.
         range_21 = np.linspace(0, self.radius, self.mesh_size)
         qb21_z = lambd_array[0] * (self.t_spar * (self.z_spar - self.z_bar) * range_21)
-        qb21_y = lambd_array[1] * (self.t_spar * - np.square(range_21)/2)
+        qb21_y = lambd_array[1] * (self.t_spar * - np.square(range_21) / 2)
         qb21 = np.add(qb21_y, qb21_z)
 
         # qb22 ------------
@@ -342,13 +346,13 @@ class shear_calc_suite():
         # print(qb23[-1])
         # qb24 -------------
         qb24_z = lambd_array[0] * self.t_spar * (self.z_spar - self.z_bar) * range_21
-        qb24_y = lambd_array[1] * self.t_spar * (self.radius * range_21 - np.square(range_21)/ 2)
+        qb24_y = lambd_array[1] * self.t_spar * (self.radius * range_21 - np.square(range_21) / 2)
         qb24 = np.add(qb24_y, qb24_z) + qb23[-1]
 
         qb_discrete = [qb11, qb12, qb13, qb21, qb22, qb23, qb24]
         qb_net = [qb11[-1], qb12[-1], qb13[-1], qb21[-1], qb22[-1], qb23[-1], qb24[-1]]
         # qb_yz_coords = get_mesh_coords(range_11, range_12, range_21, range_22)
-        qb_y, qb_z = self.get_mesh_coords(range_11, range_12, range_21, range_22)
+        qb_y, qb_z, qt_y, qt_z = self.get_mesh_coords(range_11, range_12, range_21, range_22)
         # print(qb_discrete)
         qb_plot = np.empty((0,))
         for item in qb_discrete:
@@ -357,7 +361,7 @@ class shear_calc_suite():
         # self.plot_colour_scatter(qb_plot, qb_y, qb_z)
         # print('ugandans unite', qb_discrete, qb_plot)
 
-        return qb_discrete, qb_net, qb_y, qb_z
+        return qb_discrete, qb_net, qb_y, qb_z, qt_y, qt_z
 
     @staticmethod
     def get_shortest_normal(self):
@@ -376,7 +380,7 @@ class shear_calc_suite():
         # Since aileron is symmetric on the z axis, only a downwards shear of S_y = 1 is applied.
         print('Shear center Calculation')
         lambdas = self.get_constants([0, -1])
-        _, qb_list, _, _ = self.get_shear_flow_base_v2(lambdas)
+        _, qb_list, _, _, _, _ = self.get_shear_flow_base_v2(lambdas)
 
         # print(qb_list)
         # since only the z coordinate of the shear centre is needed,
@@ -469,12 +473,10 @@ class shear_calc_suite():
         q0s = np.transpose(big_chungus_sol[:2, :]).flatten()
         # print(q0s)
         q_tot = [q_discrete[0] + q0s[0],
-                 q_discrete[1] + q0s[0] - q0s[1],
+                 q_discrete[1] + q0s[0] - q0s[1] - (q_discrete[6] + q_discrete[3]),
                  q_discrete[2] + q0s[0],
-                 q_discrete[3] + q0s[1] - q0s[0],
                  q_discrete[4] + q0s[1],
-                 q_discrete[5] + q0s[1],
-                 q_discrete[6] + q0s[1] - q0s[0]]
+                 q_discrete[5] + q0s[1]]
 
         # print(q0s)
         # output formats:
@@ -485,19 +487,20 @@ class shear_calc_suite():
 
     def test_symmetry_unit(self, szy):
         lambds = self.get_constants(szy)
-        qb_discrete, q_net, qy, qz = self.get_shear_flow_base_v2(lambds)
+        qb_discrete, q_net, qy, qz, qty, qtz = self.get_shear_flow_base_v2(lambds)
         _, q_tot = self.get_shear_distr(szy, [self.z_sc, 0], qb_discrete, q_net)
-        self.plot_colour_scatter(qb_discrete, qy, qz)
+        # self.plot_colour_scatter(qb_discrete, qy, qz)
+        self.plot_colour_scatter(q_tot, qty, qtz)
 
     def get_shear_analysis_on_x(self, x_point):
         sz = float(ils.S_z(x_point))
         sy = float(ils.S_y(x_point))
         lambds = self.get_constants([sz, sy])
-        qb_discrete, q_net, qy, qz = self.get_shear_flow_base_v2(lambds)
+        qb_discrete, q_net, qy, qz, qty, qtz = self.get_shear_flow_base_v2(lambds)
         _, q_tot = self.get_shear_distr([sz, sy], [self.z_sc, 0], qb_discrete, q_net)
         # self.plot_colour_scatter(qb_discrete, qy, qz)
         # print(q_tot)
-        self.plot_colour_scatter(q_tot, qy, qz)
+        self.plot_colour_scatter(q_tot, qty, qtz)
 
     def init_get_szy(self):
         x_max = self.aircraft_class.l_a  # aileron length
@@ -513,6 +516,21 @@ class shear_calc_suite():
             print('shear in z and y: ', np.array([s_z, s_y]))
             yield np.array([s_z, s_y])
         # return x_mesh_points
+
+    def get_torsional_shear(self, x_point):
+        torsion = ils.T(x_point)
+
+        row1_l = np.array([2 * self.a_i, 2 * self.a_ii, 0])
+        row2_l = np.array(
+            [m.pi * self.radius / self.t_skin + self.h_spar / self.t_spar, -self.h_spar / self.t_spar, 0]) / (
+                         2 * self.a_i)
+        row3_l = np.array([-self.h_spar / self.t_spar, 2 * self.l_sk / self.t_skin + self.h_spar / self.t_spar, 0]) / (
+                2 * self.a_ii)
+        rhs = np.array([[torsion], [0], [0]])
+        lhs = np.vstack((row1_l, row2_l, row3_l))
+        q0ts = np.linalg.solve(lhs, rhs).flatten()
+
+        return q0ts
 
     def get_torsional_stiffness(self):
         # aileron dimensions and thicknesses imported through self.
@@ -545,4 +563,4 @@ a320_shear = shear_calc_suite(A320, [0, 0], mesh_size=100)
 # get_shear_flow_base_v2([1, 1])
 # print(a320_shear.get_shear_center())
 a320_shear.get_shear_analysis_on_x(0.5)
-a320_shear.test_symmetry_unit([0,-1])
+a320_shear.test_symmetry_unit([0, -1])
