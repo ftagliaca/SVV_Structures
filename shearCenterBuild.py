@@ -488,7 +488,7 @@ def shear_calc_env(aircraft_class, szy_list, mesh_size=100):
             yield np.array([s_z, s_y])
         # return x_mesh_points
 
-    def get_torsional_stiffness(aircraft_class):
+    def get_torsional_stiffness(aileron):
         h_a = aileron.h
         C_a = aileron.C_a
         

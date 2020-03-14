@@ -1,11 +1,15 @@
 ### Importing required packages
+from shearCenterBuild import get_shear_centre , get_torsional_stiffness_ as torsional_stiffness
+from aero_debug_plot import moment_of_inertia
 from aileronProperties import Aileron
+from collections import namedtuple
 from unittest import TestCase
+from typing import List
 import unittest
 import numpy as np
 import math as m
-from shearCenterBuild import get_shear_centre, get_torsional_stiffness_ as torsional_stiffness
-from collections import namedtuple
+
+np.set_printoptions(linewidth=2**10)
 
 VerificationProperties = namedtuple('VerificationProperties', [
     'stringer_coordinates',
@@ -21,16 +25,25 @@ VerificationProperties = namedtuple('VerificationProperties', [
 ])
 
 
-def print_correctness(first, second, correct, suffix=''):
-    if not correct:
-        print(f"Incorrect. {suffix}")
-        print(f"   should be: {first}")
-        print(f"          is: {second} ({((second / first - 1) * 100):+.2f}%)")
-    else:
-        print(f"Correct {suffix}")
-
-
 class GeometricalProperties(TestCase):
+
+    def __init__(self, methodName='runTest'):
+        super().__init__(methodName=methodName)
+
+
+        # table [geometrical property][aircraft1_shouldbe aircraft1_is aircraft2_shouldbe airacraft2_is]
+        self.geometrical_property = 0
+        self.data = []
+
+    def next_aircraft(self):
+        self.geometrical_property = 0
+
+    def get_property(self) -> List:
+        while self.geometrical_property >= len(self.data):
+            self.data.append([])
+        
+        self.geometrical_property += 1
+        return self.data[self.geometrical_property - 1]
 
     def load_aircraft(self, name: str, constant_stiffener_count=False):
         run_verification_model = False
@@ -390,6 +403,10 @@ class GeometricalProperties(TestCase):
             print("- Torsional constant")
             self.assertAlmostEqual(self.verification_properties.torsional_constant, torsional_stiffness(self.aileron)[0], delta=1e-6, msg="J is not correct.")
 
+            self.next_aircraft()
+        
+        # print(np.array(self.data))
+
     def assertAlmostEqual(self, first, second, places=None, msg=None, delta=None):
         correct = True
         try:
@@ -397,7 +414,7 @@ class GeometricalProperties(TestCase):
         except AssertionError:
             correct = False
 
-        print_correctness(first, second, correct, suffix=f"(up to {delta}; magnitude of error: {'1e' + f'{(second - first):.2e}'.split('e')[-1]})")
+        self.handle_correctness(first, second, correct, suffix=f"(up to {delta}; magnitude of error: {'1e' + f'{(second - first):.2e}'.split('e')[-1]})")
 
     def assertEqual(self, first, second, msg=None):
         correct = True
@@ -406,7 +423,17 @@ class GeometricalProperties(TestCase):
         except AssertionError:
             correct = False
 
-        print_correctness(first, second, correct)
+        self.handle_correctness(first, second, correct)
+
+    def handle_correctness(self, first, second, correct, suffix=''):
+        self.get_property().extend([first, second, second - first, second + first if first == 0 or second == 0 else second / first - 1])
+        
+        if not correct:
+            print(f"Incorrect. {suffix}")
+            print(f"   should be: {first}")
+            print(f"          is: {second} ({((second / first - 1) * 100):+.2f}%)")
+        else:
+            print(f"Correct {suffix}")
 
 if __name__ == "__main__":
     unittest.main()
