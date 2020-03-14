@@ -490,7 +490,7 @@ class shear_calc_suite():
         qb_discrete, q_net, qy, qz, qty, qtz = self.get_shear_flow_base_v2(lambds)
         _, q_tot = self.get_shear_distr(szy, [self.z_sc, 0], qb_discrete, q_net)
         # self.plot_colour_scatter(qb_discrete, qy, qz)
-        self.plot_colour_scatter(q_tot, qty, qtz)
+        # self.plot_colour_scatter(q_tot, qty, qtz)
 
     def get_shear_analysis_on_x(self, x_point):
         sz = float(ils.S_z(x_point))
@@ -500,7 +500,7 @@ class shear_calc_suite():
         _, q_tot = self.get_shear_distr([sz, sy], [self.z_sc, 0], qb_discrete, q_net)
         # self.plot_colour_scatter(qb_discrete, qy, qz)
         # print(q_tot)
-        self.plot_colour_scatter(q_tot, qty, qtz)
+        # self.plot_colour_scatter(q_tot, qty, qtz)
 
     def init_get_szy(self):
         x_max = self.aircraft_class.l_a  # aileron length
@@ -557,10 +557,11 @@ class shear_calc_suite():
         return J
 
 
-a320_shear = shear_calc_suite(A320, [0, 0], mesh_size=100)
-# a320_shear.get_shear_flow_base_v1([0,0])
+if __name__ == "__main__":
+    a320_shear = shear_calc_suite(A320, [0, 0], mesh_size=100)
+    # a320_shear.get_shear_flow_base_v1([0,0])
 
-# get_shear_flow_base_v2([1, 1])
-# print(a320_shear.get_shear_center())
-a320_shear.get_shear_analysis_on_x(0.5)
-a320_shear.test_symmetry_unit([0, -1])
+    # get_shear_flow_base_v2([1, 1])
+    # print(a320_shear.get_shear_center())
+    a320_shear.get_shear_analysis_on_x(0.5)
+    a320_shear.test_symmetry_unit([0, -1])
