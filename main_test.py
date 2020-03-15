@@ -1,11 +1,15 @@
 ### Importing required packages
+from shearCenterBuild import shear_calc_suite
+from aero_debug_plot import moment_of_inertia
 from aileronProperties import Aileron
+from collections import namedtuple
 from unittest import TestCase
+from typing import List
 import unittest
 import numpy as np
 import math as m
-from shearCenterBuild import get_shear_centre, get_torsional_stiffness_ as torsional_stiffness
-from collections import namedtuple
+
+np.set_printoptions(linewidth=2**10)
 
 VerificationProperties = namedtuple('VerificationProperties', [
     'stringer_coordinates',
@@ -21,16 +25,25 @@ VerificationProperties = namedtuple('VerificationProperties', [
 ])
 
 
-def print_correctness(first, second, correct, suffix=''):
-    if not correct:
-        print(f"Incorrect. {suffix}")
-        print(f"   should be: {first}")
-        print(f"          is: {second} ({((second / first - 1) * 100):+.2f}%)")
-    else:
-        print(f"Correct {suffix}")
-
-
 class GeometricalProperties(TestCase):
+
+    def __init__(self, methodName='runTest'):
+        super().__init__(methodName=methodName)
+
+
+        # table [geometrical property][aircraft1_shouldbe aircraft1_is aircraft2_shouldbe airacraft2_is]
+        self.geometrical_property = 0
+        self.data = []
+
+    def next_aircraft(self):
+        self.geometrical_property = 0
+
+    def get_property(self) -> List:
+        while self.geometrical_property >= len(self.data):
+            self.data.append([])
+        
+        self.geometrical_property += 1
+        return self.data[self.geometrical_property - 1]
 
     def load_aircraft(self, name: str, constant_stiffener_count=False):
         run_verification_model = False
@@ -71,7 +84,6 @@ class GeometricalProperties(TestCase):
                 [-0.10145495, -0.15515843],
                 [-0.10864704, -0.08330976],
                 [-0.06845563, -0.02322472]]), cross_section_area_tot=0.06876164101099792, cross_section_area=0.0027426935105400304, y_centroid=0.0, z_centroid=-0.21577972811362234, I_yy=6.86413733566373e-05, I_zz=1.280745624085021e-05, y_shear_centre=0, z_shear_centre=-0.11922705644352412, torsional_constant=1.663139269310244e-05)
-
         elif name == "B737":
             self.Ca = 0.605
             self.la = 2.661
@@ -125,7 +137,6 @@ class GeometricalProperties(TestCase):
                     [-0.08714556, -0.17777418],
                     [-0.10247066, -0.10004751],
                     [-0.07160611, -0.02915959]]), cross_section_area_tot=0.06800942890838887, cross_section_area=0.0027704789467391617, y_centroid=0.0, z_centroid=-0.2416466303511318, I_yy=8.954404784883145e-05, I_zz=1.0642752968134631e-05, y_shear_centre=0, z_shear_centre=-0.10834219430517074, torsional_constant=1.5101498390705797e-05)
-
         elif name == "CRJ700":
             self.Ca = 0.484
             self.la = 1.691
@@ -177,7 +188,6 @@ class GeometricalProperties(TestCase):
                     [-0.07466501, -0.14088624],
                     [-0.08611301, -0.07832695],
                     [-0.05820344, -0.02251087]]), cross_section_area_tot=0.046136840816161116, cross_section_area=0.0022791886520793156, y_centroid=0.0, z_centroid=-0.19595905064248173, I_yy=4.717344573387326e-05, I_zz=6.270784865707143e-06, y_shear_centre=0, z_shear_centre=-0.09142274223537021, torsional_constant=8.629971582027014e-06)
-
         elif name == "Do228":
             self.Ca = 0.515
             self.la = 2.691
@@ -228,7 +238,6 @@ class GeometricalProperties(TestCase):
                     [-0.1183349 , -0.14186335],
                     [-0.1130787 , -0.07311575],
                     [-0.06732887, -0.01987112]]), cross_section_area_tot=0.07263656432079832, cross_section_area=0.002794534359156371, y_centroid=0.0, z_centroid=-0.21011089923358023, I_yy=6.231458098479158e-05, I_zz=1.6161179097413905e-05, y_shear_centre=0, z_shear_centre=-0.13108425184061262, torsional_constant=1.9193311985303668e-05)
-
         elif name == "Fokker100":
             self.Ca = 0.505
             self.la = 1.611
@@ -286,6 +295,12 @@ class GeometricalProperties(TestCase):
 
         ## Model stuff
         self.aileron = Aileron(self.Ca, self.la, self.x1, self.x2, self.x3, self.xa, self.ha, self.tsk, self.tsp, self.tst, self.hst, self.wst, self.nst, self.d1, self.d3, self.theta, self.P)
+
+        if constant_stiffener_count:
+            try:
+                self.shear_suite = shear_calc_suite(self.aileron, [0, 0], mesh_size=100)
+            except IndexError:
+                pass
 
         ## Verification stuff
         self.xa /= 1e2  # cm to m
@@ -382,13 +397,21 @@ class GeometricalProperties(TestCase):
 
             print("- Shear centre")
 
+            
             print("y: ", end='')
             self.assertEqual(self.verification_properties.y_shear_centre, 0, msg="y shear centre location is not correct.")
             print("z: ", end='')
-            self.assertEqual(self.verification_properties.z_shear_centre, get_shear_centre(), msg="z shear centre location is not correct.")
+            self.assertEqual(self.verification_properties.z_shear_centre, self.shear_suite.z_sc, msg="z shear centre location is not correct.")
+
+            
+                
 
             print("- Torsional constant")
-            self.assertAlmostEqual(self.verification_properties.torsional_constant, torsional_stiffness(self.aileron)[0], delta=1e-6, msg="J is not correct.")
+            self.assertAlmostEqual(self.verification_properties.torsional_constant, self.shear_suite.get_torsional_stiffness()[0], delta=1e-6, msg="J is not correct.")
+
+            self.next_aircraft()
+        
+        print(np.array(self.data))
 
     def assertAlmostEqual(self, first, second, places=None, msg=None, delta=None):
         correct = True
@@ -397,7 +420,7 @@ class GeometricalProperties(TestCase):
         except AssertionError:
             correct = False
 
-        print_correctness(first, second, correct, suffix=f"(up to {delta}; magnitude of error: {'1e' + f'{(second - first):.2e}'.split('e')[-1]})")
+        self.handle_correctness(first, second, correct, suffix=f"(up to {delta}; magnitude of error: {'1e' + f'{(second - first):.2e}'.split('e')[-1]})")
 
     def assertEqual(self, first, second, msg=None):
         correct = True
@@ -406,7 +429,17 @@ class GeometricalProperties(TestCase):
         except AssertionError:
             correct = False
 
-        print_correctness(first, second, correct)
+        self.handle_correctness(first, second, correct)
+
+    def handle_correctness(self, first, second, correct, suffix=''):
+        self.get_property().extend([first, second, second - first, second + first if first == 0 or second == 0 else second / first - 1])
+        
+        if not correct:
+            print(f"Incorrect. {suffix}")
+            print(f"   should be: {first}")
+            print(f"          is: {second} ({((second / first - 1) * 100):+.2f}%)")
+        else:
+            print(f"Correct {suffix}")
 
 if __name__ == "__main__":
     unittest.main()
