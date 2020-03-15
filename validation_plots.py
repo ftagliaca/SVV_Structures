@@ -195,15 +195,23 @@ def Hinge_defl(LC):
     return hinge_defl,diff
 
 #Validation_plot(Jam_bent_reg1, 3)
-LC = Jam_bent_B737_1
-##
-defl,diff = Hinge_defl(LC)
-X = geom_data[LE-1,1]
 
+matplotlib.rcParams.update({'font.size': 21})
 
-plt.xlabel('Spanwise location')
-plt.ylabel('Deflection')
-plt.plot(X,diff[:,2],'.',label='Validation data')
-plt.legend()
+for file, load_case in {"v_jam_bending": Jam_bent_B737_1, "v_bending": Bending_B737_1, "w_jam": Jam_str_B737_1}.items():
+    fig = plt.figure(file, figsize=(12, 4.8))
+    plt.xlabel('Spanwise location [m]')
+    plt.ylabel('Deflection [mm]')
+    x_data = linspace(0, 2.661, num=100)
+
+    defl, diff = Hinge_defl(load_case)
+    X = geom_data[LE - 1, 1]
+    plt.plot(X / 1e3, diff[:, 1 if not file.endswith("jam") else 2], '.', label='Validation', marker='o', fillstyle='none')
+
+    v = load(f"data/{file}.npy")
+
+    plt.plot(x_data, v * 1e3, '.', label='Verification', marker='x', fillstyle='none')
+    plt.legend()
+    fig.tight_layout()
 
 plt.show()
