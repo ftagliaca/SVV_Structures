@@ -22,7 +22,7 @@ class AerodynamicLoad:
 
         self.aileron = aileron
 
-        self.z_i, self.x_i = aileron.z_i, aileron.x_i # [] -> [m]
+        self.z_i, self.x_i = aileron.z_i, aileron.x_i # [] -> [m]
 
         self.data = np.genfromtxt(filename, delimiter=',') # [kN/m^2]
         self.data *= correction_factor
@@ -73,11 +73,11 @@ class AerodynamicLoad:
         # The rows in the array are: (where the columns are a_00 til a_33)
         # f(0, 0) = a_00
         A[0] = a[0, 0]
-        # f(1, 0) = a_00 + a_10 + a_20 + a_30
+        # f(1, 0) = a_00 + a_10 + a_20 + a_30
         A[1] = a[0, 0] + a[1, 0] + a[2, 0] + a[3, 0]
         # f(0, 1) = a_00 + a_01 + a_02 + a_03
         A[2] = a[0, 0] + a[0, 1] + a[0, 2] + a[0, 3]
-        # f(1, 1) = sum a_ij
+        # f(1, 1) = sum a_ij
         A[3] = np.ones(16)
 
 
