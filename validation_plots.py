@@ -1,5 +1,4 @@
 from numpy import *
-import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib
@@ -35,10 +34,10 @@ from validation_input import *
 ##col 1 = Int Pt. col 2 = S.Mises @ 1     col 3 = S.Mises @ 2     col 4 = S.S12 @ 1   col 5 = S.S12 @ 2
 ##
 ##for RPT.DATA 7, 8, 9, 10, 11, 12
-##col 1 = U.Magn @ 1  col 1 = U.U1 @ 1  col 3 = U.U2 @ 1  col 4 = U.U3 @ 1
+##col 1 = U.Magn @ 1  col 2 = U.U1 @ 1  col 3 = U.U2 @ 1  col 4 = U.U3 @ 1
 ##
 ##for RPT.DATA 13, 14, 15, 16, 17, 18
-##col 1 = RF.Magn @ 1  col 1 = RF.RF1 @ 1  col 3 = RF.RF2 @ 1  col 4 = RF.RF3 @ 1
+##col 1 = RF.Magn @ 1  col 2 = RF.RF1 @ 1  col 3 = RF.RF2 @ 1  col 4 = RF.RF3 @ 1
 
 
 def LC_meaning(loading_case):
@@ -140,7 +139,7 @@ def Validation_plot(LC, value): #LC = loading case, value is type of stress to s
     norm = matplotlib.colors.Normalize(color_dimension.min(), color_dimension.max())
     m = plt.cm.ScalarMappable(norm=norm, cmap='jet')
 
-    print(color_dimension.min(), color_dimension.max())
+    #print(color_dimension.min(), color_dimension.max())
 
     fcolors = m.to_rgba(color_dimension)
     fcolors[:, -1] = 1
@@ -169,28 +168,50 @@ def Validation_plot(LC, value): #LC = loading case, value is type of stress to s
         print(shape(X))
         ax.scatter(X,Y,Z,',',c=fcolors)
 
+    Max = abs(max(LC[:,value]))
+    I = where(abs(LC[:,value])==Max)
+    I = LC[I,0].astype(int)
+    Loc = geom_data[I-1,1:]
+
+    print('Max Value: ',Max,'\n@ Location: ',Loc)
+    return Max, Loc
     plt.show()
 
-indices = (geom_data[:, 2] == 0) * (geom_data[:, 3] == 0)
-data = np.loadtxt("data_validation.dat", delimiter=',')
+# deflection plot
+def Hinge_defl(LC):
+    #ax = plt.axes(projection='3d')
+    index = LC[:,0].astype(int)-1
+    deflected = geom_data[index,1:] + LC[:,2:]
+    hinge_defl = deflected[LE-1,:]
+    diff = hinge_defl-geom_data[LE-1,1:]
+    #ax.scatter(deflected[:,0],deflected[:,1],deflected[:,2],',',c=[0.5,0.5,0.5,0.4])
+    #plt.show()
+    Max = vstack((LE-1, sqrt(diff[:,0]**2 + diff[:,1]**2 + diff[:,2]**2)))
+    Max = Max.T
+    I = where(Max[:,1] == max(Max[:,1]))
+    I = Max[I,0].astype(int)
+    Loc = geom_data[I,1:]
+    print('Max Value: ',max(Max[:,1]),'\n@ Location: ',Loc)
+    return hinge_defl,diff
 
-print("a")
-plt.figure("v")
-plt.scatter(data[0, :], data[1, :], color="red", marker="x", label="Numerical model")
-plt.scatter(geom_data[indices, 1]/1e3, Jam_bent_B737_1[indices, 3]/1e3, color="blue", marker="o", label="Validation data")
-ax = plt.gca()
+#Validation_plot(Jam_bent_reg1, 3)
 
-ax.set_xlabel('Position span [m]')
-ax.set_ylabel('Deflection in y [m]')
-plt.legend()
+matplotlib.rcParams.update({'font.size': 21})
 
-plt.figure("w")
-plt.scatter(data[0, :], data[2, :], color="red", marker="x", label="Numerical model")
-plt.scatter(geom_data[indices, 1]/1e3, Jam_bent_B737_1[indices, 4]/1e3, color="blue", marker="o", label="Validation data")
-ax = plt.gca()
+for file, load_case in {"v_jam_bending": Jam_bent_B737_1, "v_bending": Bending_B737_1, "w_jam": Jam_str_B737_1}.items():
+    fig = plt.figure(file, figsize=(12, 4.8))
+    plt.xlabel('Spanwise location [m]')
+    plt.ylabel('Deflection [mm]')
+    x_data = linspace(0, 2.661, num=100)
 
-ax.set_xlabel('Position span [m]')
-ax.set_ylabel('Deflection in z [m]')
-plt.legend()
+    defl, diff = Hinge_defl(load_case)
+    X = geom_data[LE - 1, 1]
+    plt.plot(X / 1e3, diff[:, 1 if not file.endswith("jam") else 2], '.', label='Validation', marker='o', fillstyle='none')
+
+    v = load(f"data/{file}.npy")
+
+    plt.plot(x_data, v * 1e3, '.', label='Verification', marker='x', fillstyle='none')
+    plt.legend()
+    fig.tight_layout()
 
 plt.show()
